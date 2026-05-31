@@ -6,6 +6,29 @@ from dotenv import load_dotenv
 
 
 COMMAND_PREFIX = "!"
+MENTION_REPLY = "呼んだ？今は Discord 接続テスト中です。"
+
+
+def should_ignore_message(message: discord.Message, bot_user: discord.ClientUser) -> bool:
+    return message.author == bot_user or message.author.bot
+
+
+def is_ping_command(message: discord.Message) -> bool:
+    return message.content.strip() == f"{COMMAND_PREFIX}ping"
+
+
+def is_mentioned(message: discord.Message, bot_user: discord.ClientUser) -> bool:
+    return bot_user in message.mentions
+
+
+def build_reply(message: discord.Message, bot_user: discord.ClientUser) -> str | None:
+    if is_ping_command(message):
+        return "pong"
+
+    if is_mentioned(message, bot_user):
+        return MENTION_REPLY
+
+    return None
 
 
 class HannarioClient(discord.Client):
@@ -19,20 +42,17 @@ class HannarioClient(discord.Client):
         if self.user is None:
             return
 
-        if message.author == self.user or message.author.bot:
+        if should_ignore_message(message, self.user):
             return
 
-        content = message.content.strip()
-
-        if content == f"{COMMAND_PREFIX}ping":
-            await message.channel.send("pong")
+        reply = build_reply(message, self.user)
+        if reply is None:
             return
 
-        if self.user in message.mentions:
-            await message.reply(
-                "呼んだ？今は Discord 接続テスト中です。",
-                mention_author=False,
-            )
+        if is_ping_command(message):
+            await message.channel.send(reply)
+        else:
+            await message.reply(reply, mention_author=False)
 
 
 def main() -> None:
