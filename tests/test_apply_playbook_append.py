@@ -8,7 +8,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from apply_playbook_append import (
     apply_playbook_append,
     non_id_playbook_lines,
+    normalize_playbook_body,
     proposal_from_json_text,
+    similar_existing_playbook_line,
     validate_playbook_append,
 )
 
@@ -47,6 +49,28 @@ class ApplyPlaybookAppendTest(unittest.TestCase):
     def test_apply_playbook_append_rejects_duplicate_line(self) -> None:
         with self.assertRaises(ValueError):
             apply_playbook_append("P001: 既存ルール", "P001: 既存ルール")
+
+    def test_normalize_playbook_body(self) -> None:
+        self.assertEqual(
+            normalize_playbook_body("ユーザーの指示に従い、古い要約より直近の会話を優先して答える。"),
+            "古い要約より直近の会話を優先して答える",
+        )
+
+    def test_similar_existing_playbook_line(self) -> None:
+        current_value = "P007: 古い要約より直近の会話を優先して答える。"
+        proposal = "P008: ユーザーの指示に従い、古い要約より直近の会話を優先して答える。"
+
+        self.assertEqual(
+            similar_existing_playbook_line(current_value, proposal),
+            "P007: 古い要約より直近の会話を優先して答える。",
+        )
+
+    def test_apply_playbook_append_rejects_similar_duplicate(self) -> None:
+        with self.assertRaises(ValueError):
+            apply_playbook_append(
+                "P007: 古い要約より直近の会話を優先して答える。",
+                "P008: ユーザーの指示に従い、古い要約より直近の会話を優先して答える。",
+            )
 
     def test_proposal_from_json_text(self) -> None:
         text = """

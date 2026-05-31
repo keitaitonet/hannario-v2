@@ -1,4 +1,5 @@
 import argparse
+from difflib import SequenceMatcher
 import json
 import re
 from pathlib import Path
@@ -13,6 +14,7 @@ from preview_memory_apply import append_preview
 
 
 PLAYBOOK_LINE_PATTERN = re.compile(r"^P\d{3}:\s+\S")
+SIMILAR_BODY_RATIO_THRESHOLD = 0.82
 
 
 def parse_args() -> argparse.Namespace:
@@ -73,6 +75,45 @@ def non_id_playbook_lines(current_value: str) -> list[str]:
     ]
 
 
+def playbook_line_body(line: str) -> str:
+    return PLAYBOOK_LINE_PATTERN.sub("", line.strip(), count=1).strip()
+
+
+def normalize_playbook_body(body: str) -> str:
+    normalized = body
+    for phrase in ("ユーザーの指示に従い", "ユーザーが希望した", "今後は"):
+        normalized = normalized.replace(phrase, "")
+    for char in "。、，,. 「」『』（）() \t":
+        normalized = normalized.replace(char, "")
+    return normalized
+
+
+def similar_existing_playbook_line(current_value: str, proposal: str) -> str | None:
+    proposal_body = normalize_playbook_body(playbook_line_body(proposal))
+    if not proposal_body:
+        return None
+
+    for line in current_value.splitlines():
+        normalized_line = line.strip()
+        if not normalized_line or not PLAYBOOK_LINE_PATTERN.match(normalized_line):
+            continue
+
+        existing_body = normalize_playbook_body(playbook_line_body(normalized_line))
+        if not existing_body:
+            continue
+
+        if len(existing_body) >= 10 and (
+            existing_body in proposal_body or proposal_body in existing_body
+        ):
+            return normalized_line
+
+        similarity = SequenceMatcher(None, existing_body, proposal_body).ratio()
+        if similarity >= SIMILAR_BODY_RATIO_THRESHOLD:
+            return normalized_line
+
+    return None
+
+
 def validate_current_playbook(current_value: str, proposal: str) -> None:
     non_id_lines = non_id_playbook_lines(current_value)
     if non_id_lines:
@@ -85,6 +126,10 @@ def validate_current_playbook(current_value: str, proposal: str) -> None:
     existing_lines = {line.strip() for line in current_value.splitlines() if line.strip()}
     if proposal in existing_lines:
         raise ValueError("Proposal already exists in the current playbook.")
+
+    similar_line = similar_existing_playbook_line(current_value, proposal)
+    if similar_line is not None:
+        raise ValueError(f"Proposal appears to duplicate existing playbook line: {similar_line}")
 
 
 def apply_playbook_append(
@@ -116,7 +161,10 @@ def main() -> None:
         agent_id=agent_id,
         block_label="playbook",
     )
-    new_value = apply_playbook_append(current_block.value, proposal)
+    try:
+        new_value = apply_playbook_append(current_block.value, proposal)
+    except ValueError as error:
+        raise SystemExit(str(error)) from error
 
     print(f"agent_id={agent_id}")
     print("block_label=playbook")
