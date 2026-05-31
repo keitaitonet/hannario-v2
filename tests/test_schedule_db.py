@@ -127,8 +127,14 @@ class ScheduleDbTest(unittest.TestCase):
                 db_path=db_path,
                 now=datetime(2026, 6, 1, 10, 0, tzinfo=UTC),
             )
+            all_due_tasks = list_due_scheduled_tasks(
+                db_path=db_path,
+                now=datetime(2026, 6, 1, 10, 0, tzinfo=UTC),
+                kind="all",
+            )
 
         self.assertEqual([task.message for task in due_tasks], ["past"])
+        self.assertEqual([task.message for task in all_due_tasks], ["past", "think"])
 
     def test_initialize_database_migrates_existing_table(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

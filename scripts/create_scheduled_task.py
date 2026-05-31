@@ -6,7 +6,14 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from schedule_db import SCHEDULE_KIND_POST, create_scheduled_task, db_path_from_env
+from schedule_db import (
+    SCHEDULE_KIND_FOLLOW_UP,
+    SCHEDULE_KIND_OBSERVE,
+    SCHEDULE_KIND_POST,
+    SCHEDULE_KIND_THINK,
+    create_scheduled_task,
+    db_path_from_env,
+)
 
 
 DEFAULT_TIMEZONE = "Asia/Tokyo"
@@ -30,9 +37,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--source-message-id", help="Optional Discord source message id.")
     parser.add_argument(
         "--kind",
-        choices=["post"],
+        choices=[
+            SCHEDULE_KIND_POST,
+            SCHEDULE_KIND_THINK,
+            SCHEDULE_KIND_OBSERVE,
+            SCHEDULE_KIND_FOLLOW_UP,
+        ],
         default=SCHEDULE_KIND_POST,
-        help="Schedule kind. Only post is active in the bot for now.",
+        help="Schedule kind. post sends to Discord; other kinds are internal for now.",
     )
     parser.add_argument("--note", help="Optional internal note for this scheduled task.")
     parser.add_argument(

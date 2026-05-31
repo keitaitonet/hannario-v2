@@ -223,26 +223,37 @@ def list_due_scheduled_tasks(
     db_path: Path | None = None,
     now: datetime | None = None,
     limit: int = 10,
-    kind: ScheduleKind = SCHEDULE_KIND_POST,
+    kind: ScheduleKind | Literal["all"] = SCHEDULE_KIND_POST,
 ) -> list[ScheduledTask]:
     if limit <= 0:
         raise ValueError("limit must be positive.")
 
-    if kind not in VALID_SCHEDULE_KINDS:
+    if kind != "all" and kind not in VALID_SCHEDULE_KINDS:
         raise ValueError(f"kind must be one of {sorted(VALID_SCHEDULE_KINDS)}.")
 
     initialize_database(db_path)
     due_at_or_before = utc_isoformat(now)
     with connect(db_path) as connection:
-        rows = connection.execute(
-            """
-            SELECT * FROM scheduled_tasks
-            WHERE status = ? AND due_at <= ? AND kind = ?
-            ORDER BY due_at ASC, id ASC
-            LIMIT ?
-            """,
-            (SCHEDULE_STATUS_PENDING, due_at_or_before, kind, limit),
-        ).fetchall()
+        if kind == "all":
+            rows = connection.execute(
+                """
+                SELECT * FROM scheduled_tasks
+                WHERE status = ? AND due_at <= ?
+                ORDER BY due_at ASC, id ASC
+                LIMIT ?
+                """,
+                (SCHEDULE_STATUS_PENDING, due_at_or_before, limit),
+            ).fetchall()
+        else:
+            rows = connection.execute(
+                """
+                SELECT * FROM scheduled_tasks
+                WHERE status = ? AND due_at <= ? AND kind = ?
+                ORDER BY due_at ASC, id ASC
+                LIMIT ?
+                """,
+                (SCHEDULE_STATUS_PENDING, due_at_or_before, kind, limit),
+            ).fetchall()
 
     return [row_to_scheduled_task(row) for row in rows]
 

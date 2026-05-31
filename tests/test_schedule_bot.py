@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from bot import maybe_handle_direct_schedule_request, run_due_scheduled_tasks_once, send_channel_message
-from schedule_db import create_scheduled_task, get_scheduled_task, list_scheduled_tasks
+from schedule_db import SCHEDULE_KIND_THINK, create_scheduled_task, get_scheduled_task, list_scheduled_tasks
 from schedule_runner import ScheduleConfig
 
 
@@ -84,6 +84,34 @@ class ScheduleBotTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(updated_task.status, "done")
         self.assertIn('"should_send": true', log_text)
         self.assertIn('"status_after": "done"', log_text)
+
+    async def test_run_due_scheduled_tasks_completes_internal_tasks_without_posting(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "local.sqlite3"
+            log_path = Path(temp_dir) / "scheduled_tasks.jsonl"
+            task = create_scheduled_task(
+                channel_id="123",
+                message="internal message",
+                due_at=datetime.now(UTC) - timedelta(minutes=1),
+                kind=SCHEDULE_KIND_THINK,
+                note="think about this",
+                db_path=db_path,
+            )
+            channel = FakeChannel()
+            config = ScheduleConfig(enabled=True, db_path=db_path, log_path=log_path)
+
+            await run_due_scheduled_tasks_once(config, FakeClient(channel))  # type: ignore[arg-type]
+
+            updated_task = get_scheduled_task(task.id, db_path=db_path)
+            log_text = log_path.read_text(encoding="utf-8")
+
+        self.assertEqual(channel.sent_messages, [])
+        self.assertIsNotNone(updated_task)
+        assert updated_task is not None
+        self.assertEqual(updated_task.status, "done")
+        self.assertIn('"kind": "think"', log_text)
+        self.assertIn('"reason": "internal_think"', log_text)
+        self.assertIn('"should_send": false', log_text)
 
     async def test_maybe_handle_direct_schedule_request_creates_relative_task(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

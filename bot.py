@@ -39,7 +39,13 @@ from response_policy import (
     load_response_policy_config_from_env,
     mark_channel_active,
 )
-from schedule_db import create_scheduled_task, db_path_from_env, list_due_scheduled_tasks, mark_scheduled_task_done
+from schedule_db import (
+    SCHEDULE_KIND_POST,
+    create_scheduled_task,
+    db_path_from_env,
+    list_due_scheduled_tasks,
+    mark_scheduled_task_done,
+)
 from schedule_intent import parse_ambiguous_schedule_intent, parse_relative_schedule_intent
 from schedule_runner import (
     ScheduleConfig,
@@ -659,6 +665,7 @@ async def run_due_scheduled_tasks_once(
         list_due_scheduled_tasks,
         db_path=config.db_path,
         limit=config.due_limit,
+        kind="all",
     )
     if not tasks:
         logging.info("Discord schedule tick checked_at=%s due=0", checked_at)
@@ -670,11 +677,34 @@ async def run_due_scheduled_tasks_once(
         len(tasks),
     )
     for task in tasks:
-        send_result = await send_channel_message(
-            discord_client,
-            task.channel_id,
-            task.message,
-        )
+        if task.kind != SCHEDULE_KIND_POST:
+            updated_task = await asyncio.to_thread(
+                mark_scheduled_task_done,
+                task.id,
+                db_path=config.db_path,
+            )
+            status_after = updated_task.status if updated_task is not None else None
+            logging.info(
+                "Completed internal scheduled task #%s kind=%s note=%s",
+                task.id,
+                task.kind,
+                truncate_log_text(task.note),
+            )
+            delivery = build_scheduled_task_delivery(
+                task,
+                checked_at=checked_at,
+                should_send=False,
+                reason=f"internal_{task.kind}",
+                status_after=status_after,
+            )
+            await asyncio.to_thread(
+                append_scheduled_task_delivery_log,
+                config.log_path,
+                delivery,
+            )
+            continue
+
+        send_result = await send_channel_message(discord_client, task.channel_id, task.message)
         if send_result.should_post:
             updated_task = await asyncio.to_thread(
                 mark_scheduled_task_done,

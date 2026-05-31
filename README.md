@@ -235,6 +235,8 @@ Scheduled Discord tasks are stored in SQLite. The default database path is
 `data/local.sqlite3`; override it with `HANNARIO_DB_PATH` if needed.
 Tasks have a `kind`; existing reminders use `post`. The schema also stores an
 optional internal `note` so future non-post tasks can act as notes to the bot.
+At the moment, `post` tasks are sent to Discord. Other kinds (`think`,
+`observe`, `follow_up`) are completed internally and logged without posting.
 
 Initialize the database:
 
