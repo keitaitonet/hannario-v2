@@ -228,6 +228,8 @@ To show recent non-mention observations:
 
 ```sh
 uv run python scripts/show_recent_observations.py
+uv run python scripts/show_recent_observations.py --channel はんなり男
+uv run python scripts/show_recent_observations.py --channel-id 1421460487639535667
 ```
 
 To print recent logs as curator input text:
