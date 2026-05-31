@@ -180,6 +180,7 @@ DISCORD_TOKEN=...
 LETTA_BASE_URL=http://localhost:8283
 LETTA_AGENT_ID=...
 DISCORD_CONTEXT_MESSAGE_LIMIT=5
+DISCORD_INCLUDE_CHANNEL_SUMMARY=0
 ```
 
 Then run:
@@ -194,6 +195,8 @@ uv run python bot.py
 - Mentioning the bot sends the cleaned Discord message context to Letta.
 - On mention, the bot also sends up to `DISCORD_CONTEXT_MESSAGE_LIMIT` recent
   messages from the same channel as context. Set it to `0` to disable this.
+- If `DISCORD_INCLUDE_CHANNEL_SUMMARY=1`, the bot also sends the latest saved
+  same-channel summary from `logs/channel_summaries.jsonl`.
 - The bot replies in the same channel.
 - The bot ignores messages from itself and other bots.
 - If Letta fails, the bot sends a short fallback reply instead of crashing.
@@ -209,7 +212,8 @@ Only mention conversations are sent to Letta.
 Logs are written under `logs/`, which is ignored by git.
 
 Mention records in `logs/discord_mentions.jsonl` contain minimal Discord
-context, the recent channel context sent to Letta, and the bot reply.
+context, the recent channel context sent to Letta, the optional channel summary
+sent to Letta, and the bot reply.
 
 Observation records in `logs/discord_observations.jsonl` contain minimal
 Discord context and cleaned message content. They do not include bot replies

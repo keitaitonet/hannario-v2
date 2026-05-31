@@ -1,6 +1,9 @@
 from collections.abc import Sequence
+from typing import Any
 
 import discord
+
+from channel_summaries import format_channel_summary_for_prompt
 
 
 def clean_message_content(message: discord.Message, bot_user: discord.ClientUser) -> str:
@@ -20,6 +23,7 @@ def format_discord_message(
     message: discord.Message,
     bot_user: discord.ClientUser,
     recent_messages: Sequence[discord.Message] | None = None,
+    channel_summary: dict[str, Any] | None = None,
 ) -> str:
     channel_name = getattr(message.channel, "name", "direct-message")
     guild_name = message.guild.name if message.guild else "direct-message"
@@ -29,6 +33,10 @@ def format_discord_message(
         f"guild: {guild_name} ({message.guild.id if message.guild else 'dm'})",
         f"channel: {channel_name} ({message.channel.id})",
     ]
+
+    summary_text = format_channel_summary_for_prompt(channel_summary)
+    if summary_text is not None:
+        lines.append(summary_text)
 
     if recent_messages:
         lines.append("recent_same_channel_context_oldest_first:")

@@ -101,6 +101,31 @@ class ConversationLogTest(unittest.TestCase):
             ],
         )
 
+    def test_mention_log_record_includes_compact_channel_summary(self) -> None:
+        bot_user = SimpleNamespace(id=999)
+        current_message = fake_message("<@999> 今の話は？", message_id=103)
+        summary = {
+            "created_at": "created",
+            "channel_id": "2",
+            "channel_name": "general",
+            "record_count": 2,
+            "first_observed_at": "first",
+            "last_observed_at": "last",
+            "model": "model",
+            "summary": "summary",
+            "context": "large context",
+        }
+
+        record = mention_log_record(
+            current_message,
+            bot_user,
+            "前の話です",
+            channel_summary=summary,
+        )
+
+        self.assertEqual(record["channel_summary"]["summary"], "summary")
+        self.assertNotIn("context", record["channel_summary"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -60,6 +60,7 @@ def ask_letta(
     message: discord.Message,
     bot_user: discord.ClientUser,
     recent_messages: Sequence[discord.Message] | None = None,
+    channel_summary: dict[str, Any] | None = None,
 ) -> str:
     response = client.agents.messages.create(
         agent_id=agent_id,
@@ -72,6 +73,7 @@ def ask_letta(
                             message,
                             bot_user,
                             recent_messages,
+                            channel_summary,
                         )
                     )
                 ],

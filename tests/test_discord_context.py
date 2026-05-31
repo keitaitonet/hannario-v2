@@ -47,6 +47,25 @@ class DiscordContextTest(unittest.TestCase):
         self.assertIn("current_message:", text)
         self.assertIn("content: どう思う？", text)
 
+    def test_format_discord_message_includes_channel_summary(self) -> None:
+        bot_user = SimpleNamespace(id=999)
+        current_message = fake_message("<@999> どう思う？")
+        summary = {
+            "channel_name": "general",
+            "channel_id": "2",
+            "created_at": "2026-05-31T00:00:00+00:00",
+            "first_observed_at": "2026-05-31T00:00:00+00:00",
+            "last_observed_at": "2026-05-31T00:01:00+00:00",
+            "record_count": 2,
+            "summary": "最近は天気の話をしている。",
+        }
+
+        text = format_discord_message(current_message, bot_user, channel_summary=summary)
+
+        self.assertIn("latest_same_channel_summary:", text)
+        self.assertIn("最近は天気の話をしている。", text)
+        self.assertIn("current_message:", text)
+
 
 if __name__ == "__main__":
     unittest.main()

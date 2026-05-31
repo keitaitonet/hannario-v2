@@ -7,6 +7,7 @@ import discord
 from dotenv import load_dotenv
 from letta_client import Letta
 
+from channel_summaries import read_latest_channel_summary
 from conversation_log import log_mention_reply, log_observed_message
 from letta_agent import ask_letta
 
@@ -16,6 +17,7 @@ DEFAULT_LETTA_BASE_URL = "http://localhost:8283"
 DEFAULT_CONTEXT_MESSAGE_LIMIT = 5
 MAX_CONTEXT_MESSAGE_LIMIT = 20
 LETTA_ERROR_REPLY = "ごめん、今ちょっと考える側につながらない。"
+TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
 
 
 def should_ignore_message(message: discord.Message, bot_user: discord.ClientUser) -> bool:
@@ -46,6 +48,10 @@ def context_message_limit() -> int:
         return DEFAULT_CONTEXT_MESSAGE_LIMIT
 
     return max(0, min(value, MAX_CONTEXT_MESSAGE_LIMIT))
+
+
+def include_channel_summary() -> bool:
+    return os.getenv("DISCORD_INCLUDE_CHANNEL_SUMMARY", "").strip().lower() in TRUTHY_ENV_VALUES
 
 
 async def fetch_recent_channel_messages(
@@ -131,6 +137,21 @@ class HannarioClient(discord.Client):
                 message.id,
             )
 
+        channel_summary = None
+        if include_channel_summary():
+            channel_summary = await asyncio.to_thread(
+                read_latest_channel_summary,
+                str(message.channel.id),
+            )
+            if channel_summary is None:
+                logging.info("No saved channel summary found for channel %s", message.channel.id)
+            else:
+                logging.info(
+                    "Including channel summary created at %s for Discord message %s",
+                    channel_summary.get("created_at"),
+                    message.id,
+                )
+
         async with message.channel.typing():
             try:
                 reply = await asyncio.wait_for(
@@ -141,6 +162,7 @@ class HannarioClient(discord.Client):
                         message,
                         self.user,
                         recent_messages,
+                        channel_summary,
                     ),
                     timeout=45,
                 )
@@ -161,6 +183,7 @@ class HannarioClient(discord.Client):
             self.user,
             reply,
             recent_messages=recent_messages,
+            channel_summary=channel_summary,
         )
 
 

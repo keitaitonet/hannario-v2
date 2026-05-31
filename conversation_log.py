@@ -6,6 +6,7 @@ from typing import Any
 import discord
 
 from discord_context import clean_message_content
+from channel_summaries import compact_summary_record
 
 
 DEFAULT_LOG_PATH = Path("logs/discord_mentions.jsonl")
@@ -34,6 +35,7 @@ def mention_log_record(
     bot_user: discord.ClientUser,
     bot_reply: str,
     recent_messages: Sequence[discord.Message] | None = None,
+    channel_summary: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     guild = message.guild
     channel_name = getattr(message.channel, "name", "direct-message")
@@ -52,6 +54,7 @@ def mention_log_record(
             context_log_record(recent_message, bot_user)
             for recent_message in recent_messages or []
         ],
+        "channel_summary": compact_summary_record(channel_summary),
         "bot_reply": bot_reply,
     }
 
@@ -89,6 +92,7 @@ def log_mention_reply(
     bot_reply: str,
     *,
     recent_messages: Sequence[discord.Message] | None = None,
+    channel_summary: dict[str, Any] | None = None,
     path: Path = DEFAULT_LOG_PATH,
 ) -> None:
     append_jsonl(
@@ -98,6 +102,7 @@ def log_mention_reply(
             bot_user,
             bot_reply,
             recent_messages=recent_messages,
+            channel_summary=channel_summary,
         ),
     )
 
