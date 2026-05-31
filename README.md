@@ -10,14 +10,16 @@ Discord
       -> Letta server (Docker Compose)
           -> OpenAI model + embedding
           -> Docker volume
+          -> read-only /logs mount for custom tools
 ```
 
 - `bot.py` owns Discord I/O.
 - `discord_context.py` formats Discord messages for Letta.
-- `letta_agent.py` owns Letta message calls and response extraction.
-- Letta owns agent state, message history, and memory blocks.
-- OpenAI keys are only passed to the Letta server.
+- `letta_agent.py` owns Letta message calls, replies, and tool diagnostics.
+- Letta owns agent state, message history, memory blocks, and custom tools.
+- OpenAI keys are only passed to the Letta server and local OpenAI helper scripts.
 - Letta data is stored in the Docker volume `hannario-v2_letta_pgdata`.
+- Local runtime logs are written under `logs/`, which is ignored by git.
 
 ## Setup
 
@@ -76,103 +78,17 @@ uv run python scripts/create_agent.py
 
 Copy the printed `LETTA_AGENT_ID=...` line into `.env`.
 
-To inspect the agent's current memory blocks:
+Then register read-only Discord observation tools with the Letta agent:
 
 ```sh
-uv run python scripts/show_agent_memory.py
+uv run python scripts/register_letta_discord_tools.py
 ```
 
-To save a local snapshot of the current memory blocks:
+The registered tools are:
 
-```sh
-uv run python scripts/snapshot_agent_memory.py
-```
-
-Snapshots are written under `memory_snapshots/`, which is ignored by git.
-
-To diff two memory snapshots:
-
-```sh
-uv run python scripts/diff_agent_memory.py memory_snapshots/before.json memory_snapshots/after.json
-```
-
-To diff the latest two snapshots:
-
-```sh
-uv run python scripts/diff_latest_memory_snapshots.py
-```
-
-Recommended memory observation workflow:
-
-```sh
-# Before a play session
-uv run python scripts/snapshot_agent_memory.py
-
-# After the session
-uv run python scripts/snapshot_agent_memory.py
-uv run python scripts/diff_latest_memory_snapshots.py
-```
-
-This lets the agent use Letta memory freely while still making drift visible.
-
-To manually replace one memory block:
-
-```sh
-uv run python scripts/update_memory_block.py playbook "New full playbook text"
-```
-
-This replaces the entire block value. It is not an append operation.
-
-## Memory Operating Rules
-
-- Current default: allow Letta's conversational agent to update its own memory.
-- `playbook` entries use stable IDs like `P001`.
-- Prefer append or targeted edits conceptually; avoid rewriting the whole playbook casually.
-- `scripts/update_memory_block.py` performs a full replacement.
-- Curator scripts are advisory tools for inspection and manual review.
-- If memory drift becomes a problem, make memory blocks read-only and route writes through a gate.
-
-See [docs/curator_design.md](docs/curator_design.md) for the curator and
-optional write gate design.
-See [docs/curator_examples.md](docs/curator_examples.md) for expected curator
-behavior examples.
-Machine-readable curator examples live in `data/curator_examples.jsonl`.
-
-To test the current curator dry-run stub:
-
-```sh
-uv run python scripts/curator_dry_run.py "ユーザー: 今後はたろうって呼んで"
-```
-
-To evaluate the rule-based curator stub against the example data:
-
-```sh
-uv run python scripts/eval_curator_stub.py
-```
-
-To evaluate the LLM curator against the example data:
-
-```sh
-uv run python scripts/eval_curator_llm.py
-```
-
-This uses the OpenAI API once per example and does not write memory.
-
-To preview appending a proposal to the playbook:
-
-```sh
-uv run python scripts/preview_memory_apply.py "P006: ユーザーが希望した呼び方を尊重する。"
-```
-
-This reads memory but does not write memory.
-
-To test the LLM curator dry-run:
-
-```sh
-uv run python scripts/curator_llm_dry_run.py "ユーザー: 今後はたろうって呼んで"
-```
-
-This reads `OPENAI_API_KEY` from `.env.letta` and does not write memory.
+- `list_observed_discord_channels`
+- `get_recent_discord_observations`
+- `get_latest_discord_channel_summary`
 
 ## Run The Bot
 
@@ -203,16 +119,37 @@ uv run python bot.py
 - The bot replies in the same channel.
 - The bot ignores messages from itself and other bots.
 - If Letta fails, the bot sends a short fallback reply instead of crashing.
+- Letta tool calls and tool returns are logged by the bot when returned by Letta.
 - Mention conversations are appended to `logs/discord_mentions.jsonl`.
 - Non-mention user messages are appended to `logs/discord_observations.jsonl`
-  for observation only. They are not sent to Letta yet.
+  for observation only. They are not directly sent to Letta yet.
 
-## Conversation Logs
+## Daily Workflow
+
+Before a play session:
+
+```sh
+uv run python scripts/snapshot_agent_memory.py
+docker compose up -d letta
+uv run python bot.py
+```
+
+After a play session:
+
+```sh
+uv run python scripts/snapshot_agent_memory.py
+uv run python scripts/diff_latest_memory_snapshots.py
+uv run python scripts/list_observed_channels.py
+uv run python scripts/summarize_all_observed_channels.py --limit 20 --save
+```
+
+This lets the agent use Letta memory freely while still making memory drift and
+channel summaries visible.
+
+## Logs And Summaries
 
 The bot logs mention conversations and non-mention user message observations.
 Only mention conversations are sent to Letta.
-
-Logs are written under `logs/`, which is ignored by git.
 
 Mention records in `logs/discord_mentions.jsonl` contain minimal Discord
 context, the recent channel context sent to Letta, the optional channel summary
@@ -222,97 +159,117 @@ Observation records in `logs/discord_observations.jsonl` contain minimal
 Discord context and cleaned message content. They do not include bot replies
 because no reply is generated.
 
+Saved summaries are appended to `logs/channel_summaries.jsonl`.
+
 Logs do not include Discord tokens, OpenAI keys, Letta internal responses, raw
 Discord message dumps, or attachment contents.
 
-To show recent mention logs:
+Useful commands:
 
 ```sh
 uv run python scripts/show_recent_mentions.py
-```
-
-To show recent non-mention observations:
-
-```sh
 uv run python scripts/show_recent_observations.py
-uv run python scripts/show_recent_observations.py --channel はんなり男
-uv run python scripts/show_recent_observations.py --channel-id 1421460487639535667
-```
-
-To list channels found in the observation log:
-
-```sh
 uv run python scripts/list_observed_channels.py
+uv run python scripts/show_channel_summaries.py
 ```
 
-To show observed context for one channel:
+Channel-specific inspection:
 
 ```sh
+uv run python scripts/show_recent_observations.py --channel はんなり男
 uv run python scripts/show_channel_context.py --channel はんなり男
-uv run python scripts/show_channel_context.py --channel-id 1421460487639535667
+uv run python scripts/show_channel_summaries.py --channel はんなり男
+uv run python scripts/show_channel_summaries.py --channel はんなり男 --show-context
 ```
 
-To compare the latest mention's saved Discord API context with observed
-same-channel context:
+Debug context construction:
 
 ```sh
 uv run python scripts/show_context_debug.py
+uv run python scripts/preview_mention_input_with_summary.py
 ```
 
-To summarize recent observations for one channel without writing memory:
+Summarize observations:
 
 ```sh
 uv run python scripts/summarize_channel_observations.py --channel はんなり男
-uv run python scripts/summarize_channel_observations.py --channel-id 1421460487639535667
 uv run python scripts/summarize_channel_observations.py --channel はんなり男 --save
-```
-
-To summarize every observed channel without writing memory:
-
-```sh
 uv run python scripts/summarize_all_observed_channels.py --limit 20
 uv run python scripts/summarize_all_observed_channels.py --limit 20 --max-channels 1
 uv run python scripts/summarize_all_observed_channels.py --limit 20 --save
 ```
 
-Saved summaries are appended to `logs/channel_summaries.jsonl`.
+## Memory Operations
 
-To show saved channel summaries:
+To inspect the agent's current memory blocks:
 
 ```sh
-uv run python scripts/show_channel_summaries.py
-uv run python scripts/show_channel_summaries.py --channel はんなり男
-uv run python scripts/show_channel_summaries.py --channel はんなり男 --show-context
+uv run python scripts/show_agent_memory.py
 ```
 
-To preview a mention input with the latest saved same-channel summary:
+To save a local snapshot of the current memory blocks:
 
 ```sh
-uv run python scripts/preview_mention_input_with_summary.py
+uv run python scripts/snapshot_agent_memory.py
 ```
 
-To register read-only Discord observation tools with the Letta agent:
+Snapshots are written under `memory_snapshots/`, which is ignored by git.
+
+To diff two memory snapshots:
 
 ```sh
-uv run python scripts/register_letta_discord_tools.py
+uv run python scripts/diff_agent_memory.py memory_snapshots/before.json memory_snapshots/after.json
 ```
 
-To print recent logs as curator input text:
+To diff the latest two snapshots:
 
 ```sh
+uv run python scripts/diff_latest_memory_snapshots.py
+```
+
+To manually replace one memory block:
+
+```sh
+uv run python scripts/update_memory_block.py playbook "New full playbook text"
+```
+
+This replaces the entire block value. It is not an append operation.
+
+## Memory Operating Rules
+
+- Current default: allow Letta's conversational agent to update its own memory.
+- `playbook` entries use stable IDs like `P001`.
+- Prefer append or targeted edits conceptually; avoid rewriting the whole playbook casually.
+- `scripts/update_memory_block.py` performs a full replacement.
+- Curator scripts are advisory tools for inspection and manual review.
+- If memory drift becomes a problem, make memory blocks read-only and route writes through a gate.
+
+See [docs/curator_design.md](docs/curator_design.md) for the curator and
+optional write gate design.
+See [docs/curator_examples.md](docs/curator_examples.md) for expected curator
+behavior examples.
+Machine-readable curator examples live in `data/curator_examples.jsonl`.
+
+Curator commands:
+
+```sh
+uv run python scripts/curator_dry_run.py "ユーザー: 今後はたろうって呼んで"
+uv run python scripts/curator_llm_dry_run.py "ユーザー: 今後はたろうって呼んで"
+uv run python scripts/eval_curator_stub.py
+uv run python scripts/eval_curator_llm.py
 uv run python scripts/show_recent_mentions.py --limit 1 --curator-input
-```
-
-To run the LLM curator dry-run on recent mention logs and show an append preview:
-
-```sh
 uv run python scripts/curate_recent_mentions.py --limit 1
+uv run python scripts/preview_memory_apply.py "P006: ユーザーが希望した呼び方を尊重する。"
 ```
+
+`eval_curator_llm.py`, `curator_llm_dry_run.py`, and
+`curate_recent_mentions.py` use the OpenAI API and do not write memory.
 
 ## Not Implemented Yet
 
 - Automatic curator apply or read-only memory write gate.
+- Automatic scheduled channel summarization inside the running bot.
 - Heartbeat or scheduled autonomous actions.
-- Discord API tools beyond reading messages and sending replies.
+- Discord write tools beyond sending replies.
 - Web or database tools.
 - Deployment or process supervision.
