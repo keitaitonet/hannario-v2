@@ -246,6 +246,13 @@ same-channel context:
 uv run python scripts/show_context_debug.py
 ```
 
+To summarize recent observations for one channel without writing memory:
+
+```sh
+uv run python scripts/summarize_channel_observations.py --channel はんなり男
+uv run python scripts/summarize_channel_observations.py --channel-id 1421460487639535667
+```
+
 To print recent logs as curator input text:
 
 ```sh
