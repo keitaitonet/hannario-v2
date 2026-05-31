@@ -83,3 +83,7 @@ next stable ID.
 The stub only checks for simple Japanese keywords such as "覚えて", "今後",
 "呼んで", and "やめて". Treat its output as a CLI shape test, not a trusted
 curator decision.
+
+`scripts/curator_llm_dry_run.py` calls OpenAI directly with Structured Outputs
+and validates the result with the same Pydantic schema. It reads
+`OPENAI_API_KEY` from `.env.letta` and still does not write memory.

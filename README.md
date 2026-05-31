@@ -104,6 +104,14 @@ To test the current curator dry-run stub:
 uv run python scripts/curator_dry_run.py "ユーザー: 今後はけいたいとって呼んで"
 ```
 
+To test the LLM curator dry-run:
+
+```sh
+uv run python scripts/curator_llm_dry_run.py "ユーザー: 今後はけいたいとって呼んで"
+```
+
+This reads `OPENAI_API_KEY` from `.env.letta` and does not write memory.
+
 ## Run The Bot
 
 Make sure `.env` contains:
