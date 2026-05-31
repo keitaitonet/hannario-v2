@@ -98,6 +98,12 @@ This replaces the entire block value. It is not an append operation.
 See [docs/curator_design.md](docs/curator_design.md) for the proposed curator
 and write gate design.
 
+To test the current curator dry-run stub:
+
+```sh
+uv run python scripts/curator_dry_run.py "ユーザー: 今後はけいたいとって呼んで"
+```
+
 ## Run The Bot
 
 Make sure `.env` contains:

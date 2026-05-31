@@ -70,3 +70,12 @@ The initial apply path is manual:
 
 Automatic writes are intentionally out of scope until the curator behavior is
 trusted.
+
+## Current Stub
+
+`scripts/curator_dry_run.py` is a rule-based stub. It does not call an LLM and
+does not write memory.
+
+The stub only checks for simple Japanese keywords such as "覚えて", "今後",
+"呼んで", and "やめて". Treat its output as a CLI shape test, not a trusted
+curator decision.
