@@ -3,6 +3,8 @@
 .venv/
 logs/
 memory_snapshots/
+data/*.sqlite3
+data/*.sqlite3-*
 __pycache__/
 *.py[cod]
 .DS_Store
