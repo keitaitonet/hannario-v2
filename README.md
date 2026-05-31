@@ -232,6 +232,13 @@ uv run python scripts/show_recent_observations.py --channel はんなり男
 uv run python scripts/show_recent_observations.py --channel-id 1421460487639535667
 ```
 
+To show observed context for one channel:
+
+```sh
+uv run python scripts/show_channel_context.py --channel はんなり男
+uv run python scripts/show_channel_context.py --channel-id 1421460487639535667
+```
+
 To print recent logs as curator input text:
 
 ```sh
