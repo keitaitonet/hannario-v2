@@ -2,7 +2,7 @@ import unittest
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
-from conversation_log import mention_log_record
+from conversation_log import mention_log_record, observation_log_record
 
 
 def fake_message(
@@ -27,6 +27,32 @@ def fake_message(
 
 
 class ConversationLogTest(unittest.TestCase):
+    def test_observation_log_record_contains_minimal_message_context(self) -> None:
+        bot_user = SimpleNamespace(id=999)
+        message = fake_message(
+            "こんにちは",
+            message_id=99,
+            author_name="alice",
+            author_id=111,
+        )
+
+        record = observation_log_record(message, bot_user)
+
+        self.assertEqual(
+            record,
+            {
+                "timestamp": "2026-05-31T00:00:00+00:00",
+                "guild_id": "1",
+                "guild_name": "test-guild",
+                "channel_id": "2",
+                "channel_name": "general",
+                "message_id": "99",
+                "author_id": "111",
+                "author_display_name": "alice",
+                "clean_content": "こんにちは",
+            },
+        )
+
     def test_mention_log_record_includes_recent_context(self) -> None:
         bot_user = SimpleNamespace(id=999)
         recent_messages = [

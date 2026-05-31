@@ -7,7 +7,7 @@ import discord
 from dotenv import load_dotenv
 from letta_client import Letta
 
-from conversation_log import log_mention_reply
+from conversation_log import log_mention_reply, log_observed_message
 from letta_agent import ask_letta
 
 
@@ -100,11 +100,10 @@ class HannarioClient(discord.Client):
         if should_ignore_message(message, self.user):
             return
 
-        if is_ping_command(message):
-            await message.channel.send("pong")
-            return
-
         if not is_mentioned(message, self.user):
+            await asyncio.to_thread(log_observed_message, message, self.user)
+            if is_ping_command(message):
+                await message.channel.send("pong")
             return
 
         channel_name = getattr(message.channel, "name", "direct-message")

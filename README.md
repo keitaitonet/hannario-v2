@@ -198,24 +198,36 @@ uv run python bot.py
 - The bot ignores messages from itself and other bots.
 - If Letta fails, the bot sends a short fallback reply instead of crashing.
 - Mention conversations are appended to `logs/discord_mentions.jsonl`.
+- Non-mention user messages are appended to `logs/discord_observations.jsonl`
+  for observation only. They are not sent to Letta yet.
 
 ## Conversation Logs
 
-The bot currently logs only messages that mention it. It does not log all server
-messages.
+The bot logs mention conversations and non-mention user message observations.
+Only mention conversations are sent to Letta.
 
-Logs are written to `logs/discord_mentions.jsonl`, and `logs/` is ignored by
-git.
+Logs are written under `logs/`, which is ignored by git.
 
-Each JSONL record contains minimal Discord context, the recent channel context
-sent to Letta, and the bot reply. It does not include Discord tokens, OpenAI
-keys, Letta internal responses, raw Discord message dumps, or attachment
-contents.
+Mention records in `logs/discord_mentions.jsonl` contain minimal Discord
+context, the recent channel context sent to Letta, and the bot reply.
+
+Observation records in `logs/discord_observations.jsonl` contain minimal
+Discord context and cleaned message content. They do not include bot replies
+because no reply is generated.
+
+Logs do not include Discord tokens, OpenAI keys, Letta internal responses, raw
+Discord message dumps, or attachment contents.
 
 To show recent mention logs:
 
 ```sh
 uv run python scripts/show_recent_mentions.py
+```
+
+To show recent non-mention observations:
+
+```sh
+uv run python scripts/show_recent_observations.py
 ```
 
 To print recent logs as curator input text:
