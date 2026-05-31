@@ -18,7 +18,9 @@ class PreviewHeartbeatInputTest(unittest.TestCase):
 
         self.assertEqual(args.limit, 20)
         self.assertEqual(args.path, Path("logs/discord_observations.jsonl"))
+        self.assertEqual(args.observation_max_age_seconds, 3600)
         self.assertEqual(args.internal_result_limit, 3)
+        self.assertEqual(args.internal_result_max_age_seconds, 86400)
         self.assertEqual(args.schedule_log_path, Path("logs/scheduled_tasks.jsonl"))
 
 

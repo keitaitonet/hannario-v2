@@ -132,6 +132,9 @@ DISCORD_HEARTBEAT_ENABLED=0
 DISCORD_HEARTBEAT_INTERVAL_SECONDS=900
 DISCORD_HEARTBEAT_CONSULT_LETTA_ENABLED=0
 DISCORD_HEARTBEAT_OBSERVATION_LIMIT=20
+DISCORD_HEARTBEAT_OBSERVATION_MAX_AGE_SECONDS=3600
+DISCORD_HEARTBEAT_INTERNAL_RESULT_LIMIT=3
+DISCORD_HEARTBEAT_INTERNAL_RESULT_MAX_AGE_SECONDS=86400
 DISCORD_HEARTBEAT_POST_ENABLED=0
 DISCORD_HEARTBEAT_POST_COOLDOWN_SECONDS=3600
 DISCORD_HEARTBEAT_POST_MAX_CHARS=500
@@ -182,8 +185,11 @@ uv run python bot.py
 - If `DISCORD_HEARTBEAT_ENABLED=1`, the bot runs a periodic heartbeat tick.
   By default this logs only and does not post to Discord. If
   `DISCORD_HEARTBEAT_CONSULT_LETTA_ENABLED=1`, heartbeat sends recent
-  observations to Letta for a private status check and logs the structured
-  decision. If `DISCORD_HEARTBEAT_POST_ENABLED=1`, valid `consider_reply`
+  observations and recent internal schedule results to Letta for a private
+  status check and logs the structured decision. Observation records older than
+  `DISCORD_HEARTBEAT_OBSERVATION_MAX_AGE_SECONDS` are skipped, and internal
+  results older than `DISCORD_HEARTBEAT_INTERNAL_RESULT_MAX_AGE_SECONDS` are
+  skipped. If `DISCORD_HEARTBEAT_POST_ENABLED=1`, valid `consider_reply`
   decisions may be posted to Discord with a per-channel cooldown.
 - If `DISCORD_SCHEDULE_ENABLED=1`, the bot checks SQLite scheduled tasks every
   `DISCORD_SCHEDULE_INTERVAL_SECONDS` seconds. Due `pending` tasks are posted

@@ -15,6 +15,8 @@ from letta_agent import RETURN_MESSAGE_TYPES, extract_assistant_text
 DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 900
 DEFAULT_HEARTBEAT_OBSERVATION_LIMIT = 20
 DEFAULT_HEARTBEAT_INTERNAL_RESULT_LIMIT = 3
+DEFAULT_HEARTBEAT_OBSERVATION_MAX_AGE_SECONDS = 3600
+DEFAULT_HEARTBEAT_INTERNAL_RESULT_MAX_AGE_SECONDS = 86400
 DEFAULT_HEARTBEAT_POST_COOLDOWN_SECONDS = 3600
 DEFAULT_HEARTBEAT_POST_MAX_CHARS = 500
 DEFAULT_OBSERVATION_LOG_PATH = Path("logs/discord_observations.jsonl")
@@ -31,6 +33,8 @@ class HeartbeatConfig:
     post_enabled: bool = False
     observation_limit: int = DEFAULT_HEARTBEAT_OBSERVATION_LIMIT
     internal_result_limit: int = DEFAULT_HEARTBEAT_INTERNAL_RESULT_LIMIT
+    observation_max_age_seconds: int = DEFAULT_HEARTBEAT_OBSERVATION_MAX_AGE_SECONDS
+    internal_result_max_age_seconds: int = DEFAULT_HEARTBEAT_INTERNAL_RESULT_MAX_AGE_SECONDS
     post_cooldown_seconds: int = DEFAULT_HEARTBEAT_POST_COOLDOWN_SECONDS
     post_max_chars: int = DEFAULT_HEARTBEAT_POST_MAX_CHARS
     observation_path: Path = DEFAULT_OBSERVATION_LOG_PATH
@@ -105,6 +109,14 @@ def load_heartbeat_config_from_env() -> HeartbeatConfig:
             "DISCORD_HEARTBEAT_INTERNAL_RESULT_LIMIT",
             DEFAULT_HEARTBEAT_INTERNAL_RESULT_LIMIT,
         ),
+        observation_max_age_seconds=parse_positive_int_env(
+            "DISCORD_HEARTBEAT_OBSERVATION_MAX_AGE_SECONDS",
+            DEFAULT_HEARTBEAT_OBSERVATION_MAX_AGE_SECONDS,
+        ),
+        internal_result_max_age_seconds=parse_positive_int_env(
+            "DISCORD_HEARTBEAT_INTERNAL_RESULT_MAX_AGE_SECONDS",
+            DEFAULT_HEARTBEAT_INTERNAL_RESULT_MAX_AGE_SECONDS,
+        ),
         post_cooldown_seconds=parse_positive_int_env(
             "DISCORD_HEARTBEAT_POST_COOLDOWN_SECONDS",
             DEFAULT_HEARTBEAT_POST_COOLDOWN_SECONDS,
@@ -129,6 +141,51 @@ def read_recent_jsonl_records(path: Path, limit: int) -> list[dict[str, Any]]:
         records.append(json.loads(line))
 
     return records[-limit:]
+
+
+def parse_iso_datetime(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+
+    normalized = value.strip()
+    if normalized.endswith("Z"):
+        normalized = normalized[:-1] + "+00:00"
+
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError:
+        return None
+
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
+def filter_records_by_max_age(
+    records: list[dict[str, Any]],
+    *,
+    timestamp_key: str,
+    max_age_seconds: int,
+    now: datetime | None = None,
+) -> list[dict[str, Any]]:
+    if max_age_seconds <= 0:
+        raise ValueError("max_age_seconds must be positive.")
+
+    actual_now = now or datetime.now(UTC)
+    if actual_now.tzinfo is None:
+        actual_now = actual_now.replace(tzinfo=UTC)
+    actual_now = actual_now.astimezone(UTC)
+    oldest_allowed = actual_now - timedelta(seconds=max_age_seconds)
+
+    filtered: list[dict[str, Any]] = []
+    for record in records:
+        timestamp = parse_iso_datetime(record.get(timestamp_key))
+        if timestamp is None:
+            filtered.append(record)
+            continue
+        if oldest_allowed <= timestamp <= actual_now:
+            filtered.append(record)
+    return filtered
 
 
 def read_recent_internal_result_records(path: Path, limit: int) -> list[dict[str, Any]]:
@@ -375,9 +432,21 @@ def run_heartbeat_once(
         return HeartbeatResult(checked_at=checked_at)
 
     records = read_recent_jsonl_records(config.observation_path, config.observation_limit)
+    records = filter_records_by_max_age(
+        records,
+        timestamp_key="timestamp",
+        max_age_seconds=config.observation_max_age_seconds,
+        now=actual_now,
+    )
     internal_results = read_recent_internal_result_records(
         config.schedule_log_path,
         config.internal_result_limit,
+    )
+    internal_results = filter_records_by_max_age(
+        internal_results,
+        timestamp_key="checked_at",
+        max_age_seconds=config.internal_result_max_age_seconds,
+        now=actual_now,
     )
     heartbeat_input = build_heartbeat_input(
         records,

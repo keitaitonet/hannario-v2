@@ -8,7 +8,9 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from heartbeat import (
+    DEFAULT_HEARTBEAT_INTERNAL_RESULT_MAX_AGE_SECONDS,
     DEFAULT_HEARTBEAT_INTERVAL_SECONDS,
+    DEFAULT_HEARTBEAT_OBSERVATION_MAX_AGE_SECONDS,
     DEFAULT_HEARTBEAT_POST_COOLDOWN_SECONDS,
     DEFAULT_HEARTBEAT_LOG_PATH,
     HeartbeatDecision,
@@ -18,11 +20,13 @@ from heartbeat import (
     append_heartbeat_log,
     build_heartbeat_input,
     decide_heartbeat_post,
+    filter_records_by_max_age,
     format_internal_result_record,
     format_observation_record,
     heartbeat_log_record,
     load_heartbeat_config_from_env,
     parse_heartbeat_decision,
+    parse_iso_datetime,
     parse_positive_int_env,
     read_recent_internal_result_records,
     read_recent_jsonl_records,
@@ -55,6 +59,8 @@ class HeartbeatTest(unittest.TestCase):
                 "DISCORD_HEARTBEAT_POST_ENABLED": "1",
                 "DISCORD_HEARTBEAT_OBSERVATION_LIMIT": "5",
                 "DISCORD_HEARTBEAT_INTERNAL_RESULT_LIMIT": "2",
+                "DISCORD_HEARTBEAT_OBSERVATION_MAX_AGE_SECONDS": "120",
+                "DISCORD_HEARTBEAT_INTERNAL_RESULT_MAX_AGE_SECONDS": "600",
                 "DISCORD_HEARTBEAT_POST_COOLDOWN_SECONDS": "60",
                 "DISCORD_HEARTBEAT_POST_MAX_CHARS": "80",
             },
@@ -67,6 +73,8 @@ class HeartbeatTest(unittest.TestCase):
         self.assertTrue(config.post_enabled)
         self.assertEqual(config.observation_limit, 5)
         self.assertEqual(config.internal_result_limit, 2)
+        self.assertEqual(config.observation_max_age_seconds, 120)
+        self.assertEqual(config.internal_result_max_age_seconds, 600)
         self.assertEqual(config.post_cooldown_seconds, 60)
         self.assertEqual(config.post_max_chars, 80)
 
@@ -106,6 +114,31 @@ class HeartbeatTest(unittest.TestCase):
             records = read_recent_jsonl_records(path, 2)
 
         self.assertEqual([record["clean_content"] for record in records], ["two", "three"])
+
+    def test_parse_iso_datetime(self) -> None:
+        self.assertEqual(
+            parse_iso_datetime("2026-05-31T00:00:00Z"),
+            datetime(2026, 5, 31, 0, 0, tzinfo=UTC),
+        )
+        self.assertIsNone(parse_iso_datetime("bad"))
+
+    def test_filter_records_by_max_age(self) -> None:
+        now = datetime(2026, 5, 31, 0, 10, tzinfo=UTC)
+        records = [
+            {"timestamp": "2026-05-31T00:00:00+00:00", "text": "old"},
+            {"timestamp": "2026-05-31T00:05:01+00:00", "text": "fresh"},
+            {"timestamp": "2026-05-31T00:11:00+00:00", "text": "future"},
+            {"text": "unknown"},
+        ]
+
+        filtered = filter_records_by_max_age(
+            records,
+            timestamp_key="timestamp",
+            max_age_seconds=300,
+            now=now,
+        )
+
+        self.assertEqual([record["text"] for record in filtered], ["fresh", "unknown"])
 
     def test_read_recent_internal_result_records(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -255,17 +288,29 @@ class HeartbeatTest(unittest.TestCase):
             path = Path(temp_dir) / "observations.jsonl"
             schedule_log_path = Path(temp_dir) / "scheduled_tasks.jsonl"
             path.write_text(
-                '{"timestamp":"2026-05-31T00:00:00+00:00","clean_content":"hello"}\n',
+                "\n".join(
+                    [
+                        '{"timestamp":"2026-05-30T22:59:59+00:00","clean_content":"古い観測"}',
+                        '{"timestamp":"2026-05-31T00:00:00+00:00","clean_content":"hello"}',
+                    ]
+                ),
                 encoding="utf-8",
             )
             schedule_log_path.write_text(
-                '{"task_id":7,"kind":"think","channel_id":"123","internal_result":"あとで話す"}\n',
+                "\n".join(
+                    [
+                        '{"task_id":6,"kind":"think","channel_id":"123","checked_at":"2026-05-29T00:00:00+00:00","internal_result":"古い"}',
+                        '{"task_id":7,"kind":"think","channel_id":"123","checked_at":"2026-05-31T00:00:00+00:00","internal_result":"あとで話す"}',
+                    ]
+                ),
                 encoding="utf-8",
             )
             config = HeartbeatConfig(
                 consult_letta_enabled=True,
                 observation_path=path,
                 schedule_log_path=schedule_log_path,
+                observation_max_age_seconds=DEFAULT_HEARTBEAT_OBSERVATION_MAX_AGE_SECONDS,
+                internal_result_max_age_seconds=DEFAULT_HEARTBEAT_INTERNAL_RESULT_MAX_AGE_SECONDS,
             )
 
             with patch(
@@ -281,7 +326,11 @@ class HeartbeatTest(unittest.TestCase):
 
         self.assertEqual(result.action, "none")
         self.assertEqual(result.reason, "特になし")
-        self.assertIn("あとで話す", consult.call_args.args[2])
+        heartbeat_input = consult.call_args.args[2]
+        self.assertIn("hello", heartbeat_input)
+        self.assertNotIn("古い観測", heartbeat_input)
+        self.assertIn("あとで話す", heartbeat_input)
+        self.assertNotIn("古い", heartbeat_input)
 
     def test_decide_heartbeat_post_disabled(self) -> None:
         result = HeartbeatResult(
