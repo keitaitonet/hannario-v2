@@ -264,6 +264,14 @@ uv run python scripts/summarize_channel_observations.py --channel-id 14214604876
 uv run python scripts/summarize_channel_observations.py --channel はんなり男 --save
 ```
 
+To summarize every observed channel without writing memory:
+
+```sh
+uv run python scripts/summarize_all_observed_channels.py --limit 20
+uv run python scripts/summarize_all_observed_channels.py --limit 20 --max-channels 1
+uv run python scripts/summarize_all_observed_channels.py --limit 20 --save
+```
+
 Saved summaries are appended to `logs/channel_summaries.jsonl`.
 
 To show saved channel summaries:
