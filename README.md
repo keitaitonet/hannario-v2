@@ -174,6 +174,12 @@ Each JSONL record contains minimal Discord context and the bot reply. It does
 not include Discord tokens, OpenAI keys, Letta internal responses, raw Discord
 message dumps, or attachment contents.
 
+To show recent mention logs:
+
+```sh
+uv run python scripts/show_recent_mentions.py
+```
+
 ## Not Implemented Yet
 
 - Curator or memory write gate.
