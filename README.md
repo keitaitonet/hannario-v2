@@ -50,6 +50,9 @@ docker compose down
 
 The local Letta URL is `http://localhost:8283`.
 
+The compose service mounts local `logs/` into the Letta container as read-only
+`/logs` so custom Letta tools can read bot observation logs.
+
 ## Verify Letta
 
 With the Letta server running:
@@ -286,6 +289,12 @@ To preview a mention input with the latest saved same-channel summary:
 
 ```sh
 uv run python scripts/preview_mention_input_with_summary.py
+```
+
+To register read-only Discord observation tools with the Letta agent:
+
+```sh
+uv run python scripts/register_letta_discord_tools.py
 ```
 
 To print recent logs as curator input text:

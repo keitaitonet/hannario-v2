@@ -8,6 +8,7 @@ services:
       - "8283:8283"
     volumes:
       - letta_pgdata:/var/lib/postgresql/data
+      - ./logs:/logs:ro
 
 volumes:
   letta_pgdata:
