@@ -104,7 +104,7 @@ Machine-readable curator examples live in `data/curator_examples.jsonl`.
 To test the current curator dry-run stub:
 
 ```sh
-uv run python scripts/curator_dry_run.py "ユーザー: 今後はけいたいとって呼んで"
+uv run python scripts/curator_dry_run.py "ユーザー: 今後はたろうって呼んで"
 ```
 
 To evaluate the rule-based curator stub against the example data:
@@ -132,7 +132,7 @@ This reads memory but does not write memory.
 To test the LLM curator dry-run:
 
 ```sh
-uv run python scripts/curator_llm_dry_run.py "ユーザー: 今後はけいたいとって呼んで"
+uv run python scripts/curator_llm_dry_run.py "ユーザー: 今後はたろうって呼んで"
 ```
 
 This reads `OPENAI_API_KEY` from `.env.letta` and does not write memory.

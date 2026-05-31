@@ -22,7 +22,7 @@ Reason: Ordinary conversation does not imply durable memory.
 Input:
 
 ```text
-ユーザー: 今後はけいたいとって呼んで。
+ユーザー: 今後はたろうって呼んで。
 ```
 
 Expected action: `append`

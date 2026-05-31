@@ -79,7 +79,7 @@ trusted.
 1. Run the curator:
 
    ```sh
-   uv run python scripts/curator_llm_dry_run.py "ユーザー: 今後はけいたいとって呼んで"
+   uv run python scripts/curator_llm_dry_run.py "ユーザー: 今後はたろうって呼んで"
    ```
 
 2. Review the returned JSON. Do not apply it blindly.
