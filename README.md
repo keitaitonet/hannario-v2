@@ -107,6 +107,12 @@ To test the current curator dry-run stub:
 uv run python scripts/curator_dry_run.py "ユーザー: 今後はけいたいとって呼んで"
 ```
 
+To evaluate the rule-based curator stub against the example data:
+
+```sh
+uv run python scripts/eval_curator_stub.py
+```
+
 To test the LLM curator dry-run:
 
 ```sh
