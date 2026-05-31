@@ -193,9 +193,6 @@ def decide_response(
             silence_channel(state_store, channel_id, config, now=actual_now)
         return ResponseDecision(False, "silenced")
 
-    if state is not None and is_silenced(state, actual_now):
-        return ResponseDecision(False, "silenced")
-
     if is_mentioned(message, bot_user):
         return ResponseDecision(True, "mention")
 
@@ -208,6 +205,9 @@ def decide_response(
         and contains_wake_word(content, config.wake_words)
     ):
         return ResponseDecision(True, "wake_word")
+
+    if state is not None and is_silenced(state, actual_now):
+        return ResponseDecision(False, "silenced")
 
     if (
         config.active_reply_enabled

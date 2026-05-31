@@ -176,13 +176,35 @@ class ResponsePolicyTest(unittest.TestCase):
         self.assertTrue(is_silenced(state_store["123"], now + timedelta(seconds=30)))
         self.assertFalse(is_silenced(state_store["123"], now + timedelta(seconds=61)))
 
-    def test_silenced_channel_blocks_even_mention(self) -> None:
+    def test_silenced_channel_allows_explicit_mention(self) -> None:
         now = datetime(2026, 5, 31, tzinfo=UTC)
         bot_user = SimpleNamespace(id=1)
         state_store = {
             "123": ChannelConversationState(silenced_until=now + timedelta(seconds=60)),
         }
         message = self.message("呼んだよ", mentions=[bot_user])
+
+        decision = decide_response(
+            message,
+            bot_user,
+            ResponsePolicyConfig(),
+            state_store,
+            now=now,
+        )
+
+        self.assertTrue(decision.should_respond)
+        self.assertEqual(decision.trigger, "mention")
+
+    def test_silenced_channel_blocks_active_follow_up(self) -> None:
+        now = datetime(2026, 5, 31, tzinfo=UTC)
+        bot_user = SimpleNamespace(id=1)
+        state_store = {
+            "123": ChannelConversationState(
+                active_until=now + timedelta(seconds=60),
+                silenced_until=now + timedelta(seconds=60),
+            ),
+        }
+        message = self.message("続きは？")
 
         decision = decide_response(
             message,

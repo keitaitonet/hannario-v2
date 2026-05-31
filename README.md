@@ -130,7 +130,8 @@ uv run python bot.py
   `DISCORD_ACTIVE_REPLY_WINDOW_SECONDS`; during that window, ordinary follow-up
   messages in the same channel can also trigger replies.
 - If a message contains one of `DISCORD_SILENCE_PHRASES`, the bot stops replying
-  in that channel for `DISCORD_SILENCE_SECONDS`.
+  to active follow-up messages in that channel for `DISCORD_SILENCE_SECONDS`.
+  Explicit mentions, Discord replies to the bot, and wake words still work.
 - On reply, the bot sends the cleaned Discord message context to Letta.
 - On reply, the bot also sends up to `DISCORD_CONTEXT_MESSAGE_LIMIT` recent
   messages from the same channel as context. Set it to `0` to disable this.
