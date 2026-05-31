@@ -232,7 +232,11 @@ class HannarioClient(discord.Client):
             return
 
         self.heartbeat_task = asyncio.create_task(
-            run_heartbeat_loop(self.heartbeat_config),
+            run_heartbeat_loop(
+                self.heartbeat_config,
+                self.letta_client,
+                self.letta_agent_id,
+            ),
         )
         logging.info(
             "Started Discord heartbeat task: interval=%ds",
@@ -372,10 +376,19 @@ async def run_auto_summary_loop(config: AutoSummaryConfig) -> None:
         await asyncio.sleep(config.interval_seconds)
 
 
-async def run_heartbeat_loop(config: HeartbeatConfig) -> None:
+async def run_heartbeat_loop(
+    config: HeartbeatConfig,
+    letta_client: Letta,
+    letta_agent_id: str | None,
+) -> None:
     while True:
         try:
-            await asyncio.to_thread(run_heartbeat_once)
+            await asyncio.to_thread(
+                run_heartbeat_once,
+                config,
+                client=letta_client,
+                agent_id=letta_agent_id,
+            )
         except Exception:
             logging.exception("Discord heartbeat run failed")
 

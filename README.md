@@ -119,6 +119,8 @@ DISCORD_AUTO_SUMMARY_LIMIT=20
 DISCORD_AUTO_SUMMARY_MIN_NEW_MESSAGES=5
 DISCORD_HEARTBEAT_ENABLED=0
 DISCORD_HEARTBEAT_INTERVAL_SECONDS=900
+DISCORD_HEARTBEAT_CONSULT_LETTA_ENABLED=0
+DISCORD_HEARTBEAT_OBSERVATION_LIMIT=20
 ```
 
 Then run:
@@ -152,7 +154,9 @@ uv run python bot.py
 - If `DISCORD_AUTO_SUMMARY_ENABLED=1`, the bot periodically summarizes
   observed channel messages and appends results to `logs/channel_summaries.jsonl`.
 - If `DISCORD_HEARTBEAT_ENABLED=1`, the bot runs a periodic heartbeat tick.
-  This currently logs only and does not post to Discord.
+  By default this logs only and does not post to Discord. If
+  `DISCORD_HEARTBEAT_CONSULT_LETTA_ENABLED=1`, heartbeat sends recent
+  observations to Letta for a private status check and logs the result.
 - The bot replies in the same channel.
 - The bot ignores messages from itself and other bots.
 - If Letta fails, the bot sends a short fallback reply instead of crashing.
