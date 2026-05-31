@@ -342,14 +342,17 @@ uv run python scripts/eval_curator_llm.py
 uv run python scripts/show_recent_mentions.py --limit 1 --curator-input
 uv run python scripts/curate_recent_mentions.py --limit 1
 uv run python scripts/preview_memory_apply.py "P006: ユーザーが希望した呼び方を尊重する。"
+uv run python scripts/apply_playbook_append.py "P006: ユーザーが希望した呼び方を尊重する。"
 ```
 
 `eval_curator_llm.py`, `curator_llm_dry_run.py`, and
 `curate_recent_mentions.py` use the OpenAI API and do not write memory.
+`apply_playbook_append.py` writes memory only after an explicit confirmation.
 
 ## Not Implemented Yet
 
 - Automatic curator apply or read-only memory write gate.
+- Curator proposal parsing directly from JSON files.
 - More advanced scheduled autonomous actions beyond heartbeat.
 - Discord write tools beyond sending replies.
 - Web or database tools.
