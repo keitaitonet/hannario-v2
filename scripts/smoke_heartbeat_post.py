@@ -103,7 +103,7 @@ async def send_manual_heartbeat_post(
         finally:
             await client.close()
 
-    await client.start(token, log_handler=None)
+    await client.start(token)
     return await future
 
 
