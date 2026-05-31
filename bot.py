@@ -15,6 +15,7 @@ from auto_channel_summary import (
 )
 from channel_summaries import read_latest_channel_summary
 from conversation_log import log_mention_reply, log_observed_message
+from heartbeat import HeartbeatConfig, load_heartbeat_config_from_env, run_heartbeat_once
 from letta_agent import LettaToolEvent, ask_letta_with_diagnostics
 from response_policy import (
     ConversationStateStore,
@@ -186,6 +187,7 @@ class HannarioClient(discord.Client):
         letta_client: Letta,
         letta_agent_id: str | None,
         auto_summary_config: AutoSummaryConfig,
+        heartbeat_config: HeartbeatConfig,
         response_policy_config: ResponsePolicyConfig,
         **kwargs: Any,
     ):
@@ -193,9 +195,11 @@ class HannarioClient(discord.Client):
         self.letta_client = letta_client
         self.letta_agent_id = letta_agent_id
         self.auto_summary_config = auto_summary_config
+        self.heartbeat_config = heartbeat_config
         self.response_policy_config = response_policy_config
         self.conversation_states: ConversationStateStore = {}
         self.auto_summary_task: asyncio.Task[None] | None = None
+        self.heartbeat_task: asyncio.Task[None] | None = None
 
     async def on_ready(self) -> None:
         if self.user is None:
@@ -203,6 +207,7 @@ class HannarioClient(discord.Client):
 
         logging.info("Logged in as %s (id=%s)", self.user, self.user.id)
         self.start_auto_summary_task()
+        self.start_heartbeat_task()
 
     def start_auto_summary_task(self) -> None:
         if not self.auto_summary_config.enabled:
@@ -218,6 +223,20 @@ class HannarioClient(discord.Client):
             self.auto_summary_config.interval_seconds,
             self.auto_summary_config.limit,
             self.auto_summary_config.min_new_messages,
+        )
+
+    def start_heartbeat_task(self) -> None:
+        if not self.heartbeat_config.enabled:
+            return
+        if self.heartbeat_task is not None and not self.heartbeat_task.done():
+            return
+
+        self.heartbeat_task = asyncio.create_task(
+            run_heartbeat_loop(self.heartbeat_config),
+        )
+        logging.info(
+            "Started Discord heartbeat task: interval=%ds",
+            self.heartbeat_config.interval_seconds,
         )
 
     async def on_message(self, message: discord.Message) -> None:
@@ -353,6 +372,16 @@ async def run_auto_summary_loop(config: AutoSummaryConfig) -> None:
         await asyncio.sleep(config.interval_seconds)
 
 
+async def run_heartbeat_loop(config: HeartbeatConfig) -> None:
+    while True:
+        try:
+            await asyncio.to_thread(run_heartbeat_once)
+        except Exception:
+            logging.exception("Discord heartbeat run failed")
+
+        await asyncio.sleep(config.interval_seconds)
+
+
 def main() -> None:
     load_dotenv()
     logging.basicConfig(
@@ -370,6 +399,7 @@ def main() -> None:
     letta_client = Letta(base_url=os.getenv("LETTA_BASE_URL", DEFAULT_LETTA_BASE_URL))
     letta_agent_id = os.getenv("LETTA_AGENT_ID")
     auto_summary_config = load_auto_summary_config_from_env()
+    heartbeat_config = load_heartbeat_config_from_env()
     response_policy_config = load_response_policy_config_from_env()
 
     client = HannarioClient(
@@ -377,6 +407,7 @@ def main() -> None:
         letta_client=letta_client,
         letta_agent_id=letta_agent_id,
         auto_summary_config=auto_summary_config,
+        heartbeat_config=heartbeat_config,
         response_policy_config=response_policy_config,
     )
     client.run(token, log_handler=None)
