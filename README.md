@@ -256,6 +256,14 @@ uv run python scripts/summarize_channel_observations.py --channel はんなり�
 
 Saved summaries are appended to `logs/channel_summaries.jsonl`.
 
+To show saved channel summaries:
+
+```sh
+uv run python scripts/show_channel_summaries.py
+uv run python scripts/show_channel_summaries.py --channel はんなり男
+uv run python scripts/show_channel_summaries.py --channel はんなり男 --show-context
+```
+
 To print recent logs as curator input text:
 
 ```sh
