@@ -11,6 +11,7 @@ from response_policy import (
     contains_wake_word,
     decide_response,
     is_active,
+    is_active_on_cooldown,
     is_random_on_cooldown,
     is_silenced,
     is_resolved_reply_to_bot,
@@ -159,6 +160,28 @@ class ResponsePolicyTest(unittest.TestCase):
         self.assertFalse(decision.should_respond)
         self.assertEqual(decision.trigger, "none")
 
+    def test_active_reply_respects_cooldown(self) -> None:
+        now = datetime(2026, 5, 31, tzinfo=UTC)
+        bot_user = SimpleNamespace(id=1)
+        state_store = {
+            "123": ChannelConversationState(
+                active_until=now + timedelta(seconds=60),
+                active_cooldown_until=now + timedelta(seconds=30),
+            ),
+        }
+        message = self.message("それで？")
+
+        decision = decide_response(
+            message,
+            bot_user,
+            ResponsePolicyConfig(),
+            state_store,
+            now=now,
+        )
+
+        self.assertFalse(decision.should_respond)
+        self.assertEqual(decision.trigger, "active_cooldown")
+
     def test_active_reply_skips_repeated_content(self) -> None:
         now = datetime(2026, 5, 31, tzinfo=UTC)
         bot_user = SimpleNamespace(id=1)
@@ -254,12 +277,17 @@ class ResponsePolicyTest(unittest.TestCase):
         state = mark_channel_active(
             state_store,
             "123",
-            ResponsePolicyConfig(active_reply_window_seconds=60),
+            ResponsePolicyConfig(
+                active_reply_window_seconds=60,
+                active_reply_cooldown_seconds=10,
+            ),
             now=now,
         )
 
         self.assertTrue(is_active(state, now + timedelta(seconds=30)))
         self.assertFalse(is_active(state, now + timedelta(seconds=61)))
+        self.assertTrue(is_active_on_cooldown(state, now + timedelta(seconds=5)))
+        self.assertFalse(is_active_on_cooldown(state, now + timedelta(seconds=11)))
 
     def test_silence_channel_clears_active_state(self) -> None:
         now = datetime(2026, 5, 31, tzinfo=UTC)
@@ -464,6 +492,7 @@ class ResponsePolicyTest(unittest.TestCase):
                 "DISCORD_SILENCE_ENABLED": "1",
                 "DISCORD_RANDOM_REPLY_ENABLED": "1",
                 "DISCORD_ACTIVE_REPLY_WINDOW_SECONDS": "120",
+                "DISCORD_ACTIVE_REPLY_COOLDOWN_SECONDS": "30",
                 "DISCORD_SILENCE_SECONDS": "600",
                 "DISCORD_RANDOM_REPLY_RATE": "0.25",
                 "DISCORD_RANDOM_REPLY_COOLDOWN_SECONDS": "900",
@@ -481,6 +510,7 @@ class ResponsePolicyTest(unittest.TestCase):
         self.assertTrue(config.silence_enabled)
         self.assertTrue(config.random_reply_enabled)
         self.assertEqual(config.active_reply_window_seconds, 120)
+        self.assertEqual(config.active_reply_cooldown_seconds, 30)
         self.assertEqual(config.silence_seconds, 600)
         self.assertEqual(config.random_reply_rate, 0.25)
         self.assertEqual(config.random_reply_cooldown_seconds, 900)

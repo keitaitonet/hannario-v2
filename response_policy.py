@@ -7,6 +7,7 @@ from typing import Any
 DEFAULT_WAKE_WORDS = ("はんなり男", "はんなり")
 DEFAULT_SILENCE_PHRASES = ("黙って", "消えて", "静かにして", "もういい", "呼んでない")
 DEFAULT_ACTIVE_REPLY_WINDOW_SECONDS = 300
+DEFAULT_ACTIVE_REPLY_COOLDOWN_SECONDS = 60
 DEFAULT_SILENCE_SECONDS = 1800
 DEFAULT_RANDOM_REPLY_RATE = 0.1
 DEFAULT_RANDOM_REPLY_COOLDOWN_SECONDS = 900
@@ -25,6 +26,7 @@ class ResponsePolicyConfig:
     silence_enabled: bool = True
     random_reply_enabled: bool = False
     active_reply_window_seconds: int = DEFAULT_ACTIVE_REPLY_WINDOW_SECONDS
+    active_reply_cooldown_seconds: int = DEFAULT_ACTIVE_REPLY_COOLDOWN_SECONDS
     silence_seconds: int = DEFAULT_SILENCE_SECONDS
     random_reply_rate: float = DEFAULT_RANDOM_REPLY_RATE
     random_reply_cooldown_seconds: int = DEFAULT_RANDOM_REPLY_COOLDOWN_SECONDS
@@ -43,6 +45,7 @@ class ResponseDecision:
 @dataclass
 class ChannelConversationState:
     active_until: datetime | None = None
+    active_cooldown_until: datetime | None = None
     silenced_until: datetime | None = None
     random_cooldown_until: datetime | None = None
     last_non_explicit_candidate_content: str = ""
@@ -111,6 +114,10 @@ def load_response_policy_config_from_env() -> ResponsePolicyConfig:
         active_reply_window_seconds=parse_positive_int_env(
             "DISCORD_ACTIVE_REPLY_WINDOW_SECONDS",
             DEFAULT_ACTIVE_REPLY_WINDOW_SECONDS,
+        ),
+        active_reply_cooldown_seconds=parse_positive_int_env(
+            "DISCORD_ACTIVE_REPLY_COOLDOWN_SECONDS",
+            DEFAULT_ACTIVE_REPLY_COOLDOWN_SECONDS,
         ),
         silence_seconds=parse_positive_int_env("DISCORD_SILENCE_SECONDS", DEFAULT_SILENCE_SECONDS),
         random_reply_rate=parse_probability_env(
@@ -215,6 +222,10 @@ def is_active(state: ChannelConversationState, now: datetime) -> bool:
     return state.active_until is not None and state.active_until > now
 
 
+def is_active_on_cooldown(state: ChannelConversationState, now: datetime) -> bool:
+    return state.active_cooldown_until is not None and state.active_cooldown_until > now
+
+
 def is_silenced(state: ChannelConversationState, now: datetime) -> bool:
     return state.silenced_until is not None and state.silenced_until > now
 
@@ -256,6 +267,9 @@ def mark_channel_active(
     actual_now = now or current_time()
     state = get_channel_state(state_store, channel_id)
     state.active_until = actual_now + timedelta(seconds=config.active_reply_window_seconds)
+    state.active_cooldown_until = actual_now + timedelta(
+        seconds=config.active_reply_cooldown_seconds,
+    )
     return state
 
 
@@ -316,6 +330,8 @@ def decide_response(
         and state is not None
         and is_active(state, actual_now)
     ):
+        if is_active_on_cooldown(state, actual_now):
+            return ResponseDecision(False, "active_cooldown")
         if exceeds_non_explicit_repeated_content_limit(state, content, config):
             return ResponseDecision(False, "active_repeated_content")
         return ResponseDecision(True, "active")

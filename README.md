@@ -101,6 +101,7 @@ LETTA_BASE_URL=http://localhost:8283
 LETTA_AGENT_ID=...
 DISCORD_CONTEXT_MESSAGE_LIMIT=5
 DISCORD_INCLUDE_CHANNEL_SUMMARY=0
+DISCORD_CHANNEL_SUMMARY_MAX_AGE_SECONDS=3600
 DISCORD_WAKE_WORDS=はんなり男,はんなり
 DISCORD_SILENCE_PHRASES=黙って,消えて,静かにして,もういい,呼んでない
 DISCORD_REPLY_TRIGGER_ENABLED=1
@@ -109,6 +110,7 @@ DISCORD_ACTIVE_REPLY_ENABLED=1
 DISCORD_SILENCE_ENABLED=1
 DISCORD_RANDOM_REPLY_ENABLED=0
 DISCORD_ACTIVE_REPLY_WINDOW_SECONDS=300
+DISCORD_ACTIVE_REPLY_COOLDOWN_SECONDS=60
 DISCORD_SILENCE_SECONDS=1800
 DISCORD_RANDOM_REPLY_RATE=0.1
 DISCORD_RANDOM_REPLY_COOLDOWN_SECONDS=900
@@ -140,7 +142,9 @@ uv run python bot.py
   when a message contains one of `DISCORD_WAKE_WORDS`.
 - After the bot replies, the channel stays active for
   `DISCORD_ACTIVE_REPLY_WINDOW_SECONDS`; during that window, ordinary follow-up
-  messages in the same channel can also trigger replies.
+  messages in the same channel can also trigger replies. Active follow-up
+  replies are rate-limited by `DISCORD_ACTIVE_REPLY_COOLDOWN_SECONDS` so the
+  bot does not answer every ordinary message.
 - If a message contains one of `DISCORD_SILENCE_PHRASES`, the bot stops replying
   to active follow-up messages in that channel for `DISCORD_SILENCE_SECONDS`.
   Explicit mentions, Discord replies to the bot, and wake words still work.
@@ -159,6 +163,7 @@ uv run python bot.py
 - If `DISCORD_INCLUDE_CHANNEL_SUMMARY=1`, the bot also sends the latest saved
   same-channel summary from `logs/channel_summaries.jsonl` as supplemental
   background. Current and recent messages are marked as higher priority.
+  Summaries older than `DISCORD_CHANNEL_SUMMARY_MAX_AGE_SECONDS` are skipped.
 - If `DISCORD_AUTO_SUMMARY_ENABLED=1`, the bot periodically summarizes
   observed channel messages and appends results to `logs/channel_summaries.jsonl`.
 - If `DISCORD_HEARTBEAT_ENABLED=1`, the bot runs a periodic heartbeat tick.

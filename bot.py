@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 import random
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import discord
@@ -42,6 +42,7 @@ COMMAND_PREFIX = "!"
 DEFAULT_LETTA_BASE_URL = "http://localhost:8283"
 DEFAULT_CONTEXT_MESSAGE_LIMIT = 5
 MAX_CONTEXT_MESSAGE_LIMIT = 20
+DEFAULT_CHANNEL_SUMMARY_MAX_AGE_SECONDS = 3600
 LETTA_ERROR_REPLY = "ごめん、今ちょっと考える側につながらない。"
 TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
 
@@ -74,6 +75,57 @@ def context_message_limit() -> int:
 
 def include_channel_summary() -> bool:
     return os.getenv("DISCORD_INCLUDE_CHANNEL_SUMMARY", "").strip().lower() in TRUTHY_ENV_VALUES
+
+
+def channel_summary_max_age_seconds() -> int:
+    raw_value = os.getenv("DISCORD_CHANNEL_SUMMARY_MAX_AGE_SECONDS")
+    if raw_value is None:
+        return DEFAULT_CHANNEL_SUMMARY_MAX_AGE_SECONDS
+
+    try:
+        value = int(raw_value)
+    except ValueError:
+        logging.warning(
+            "Invalid DISCORD_CHANNEL_SUMMARY_MAX_AGE_SECONDS=%r; using %d",
+            raw_value,
+            DEFAULT_CHANNEL_SUMMARY_MAX_AGE_SECONDS,
+        )
+        return DEFAULT_CHANNEL_SUMMARY_MAX_AGE_SECONDS
+
+    if value <= 0:
+        logging.warning(
+            "Invalid DISCORD_CHANNEL_SUMMARY_MAX_AGE_SECONDS=%r; using %d",
+            raw_value,
+            DEFAULT_CHANNEL_SUMMARY_MAX_AGE_SECONDS,
+        )
+        return DEFAULT_CHANNEL_SUMMARY_MAX_AGE_SECONDS
+
+    return value
+
+
+def is_channel_summary_fresh(
+    channel_summary: dict[str, Any],
+    *,
+    now: datetime | None = None,
+) -> bool:
+    created_at = channel_summary.get("created_at")
+    if not isinstance(created_at, str):
+        return False
+
+    try:
+        created_datetime = datetime.fromisoformat(created_at)
+    except ValueError:
+        return False
+
+    if created_datetime.tzinfo is None:
+        created_datetime = created_datetime.replace(tzinfo=UTC)
+
+    actual_now = now or datetime.now(UTC)
+    if actual_now.tzinfo is None:
+        actual_now = actual_now.replace(tzinfo=UTC)
+
+    age_seconds = (actual_now.astimezone(UTC) - created_datetime.astimezone(UTC)).total_seconds()
+    return age_seconds <= channel_summary_max_age_seconds()
 
 
 def truncate_log_text(value: str | None, limit: int = 240) -> str:
@@ -275,6 +327,7 @@ class HannarioClient(discord.Client):
                 await message.channel.send("pong")
             if decision.trigger in {
                 "silenced",
+                "active_cooldown",
                 "active_repeated_content",
                 "random_repeated_content",
             }:
@@ -326,11 +379,19 @@ class HannarioClient(discord.Client):
             if channel_summary is None:
                 logging.info("No saved channel summary found for channel %s", message.channel.id)
             else:
-                logging.info(
-                    "Including channel summary created at %s for Discord message %s",
-                    channel_summary.get("created_at"),
-                    message.id,
-                )
+                if is_channel_summary_fresh(channel_summary):
+                    logging.info(
+                        "Including channel summary created at %s for Discord message %s",
+                        channel_summary.get("created_at"),
+                        message.id,
+                    )
+                else:
+                    logging.info(
+                        "Skipping stale channel summary created at %s for Discord message %s",
+                        channel_summary.get("created_at"),
+                        message.id,
+                    )
+                    channel_summary = None
 
         async with message.channel.typing():
             try:
