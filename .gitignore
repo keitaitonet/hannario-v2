@@ -2,6 +2,7 @@
 .env.letta
 .venv/
 logs/
+memory_snapshots/
 __pycache__/
 *.py[cod]
 .DS_Store

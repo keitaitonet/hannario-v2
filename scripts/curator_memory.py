@@ -22,13 +22,18 @@ def next_playbook_id(playbook_value: str) -> str:
 def get_playbook_value() -> str:
     load_dotenv()
 
-    agent_id = os.getenv("LETTA_AGENT_ID")
-    if not agent_id:
-        raise SystemExit("Missing LETTA_AGENT_ID. Add it to .env first.")
-
     client = Letta(base_url=letta_base_url())
     block = client.agents.blocks.retrieve(
-        agent_id=agent_id,
+        agent_id=require_agent_id(),
         block_label="playbook",
     )
     return block.value
+
+
+def require_agent_id() -> str:
+    load_dotenv()
+
+    agent_id = os.getenv("LETTA_AGENT_ID")
+    if not agent_id:
+        raise SystemExit("Missing LETTA_AGENT_ID. Add it to .env first.")
+    return agent_id

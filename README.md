@@ -79,6 +79,14 @@ To inspect the agent's current memory blocks:
 uv run python scripts/show_agent_memory.py
 ```
 
+To save a local snapshot of the current memory blocks:
+
+```sh
+uv run python scripts/snapshot_agent_memory.py
+```
+
+Snapshots are written under `memory_snapshots/`, which is ignored by git.
+
 To manually replace one memory block:
 
 ```sh
