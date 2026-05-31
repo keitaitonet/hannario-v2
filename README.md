@@ -207,9 +207,10 @@ messages.
 Logs are written to `logs/discord_mentions.jsonl`, and `logs/` is ignored by
 git.
 
-Each JSONL record contains minimal Discord context and the bot reply. It does
-not include Discord tokens, OpenAI keys, Letta internal responses, raw Discord
-message dumps, or attachment contents.
+Each JSONL record contains minimal Discord context, the recent channel context
+sent to Letta, and the bot reply. It does not include Discord tokens, OpenAI
+keys, Letta internal responses, raw Discord message dumps, or attachment
+contents.
 
 To show recent mention logs:
 

@@ -1,4 +1,5 @@
 import json
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -14,10 +15,24 @@ def message_timestamp(message: discord.Message) -> str:
     return message.created_at.isoformat()
 
 
+def context_log_record(
+    message: discord.Message,
+    bot_user: discord.ClientUser,
+) -> dict[str, Any]:
+    return {
+        "timestamp": message_timestamp(message),
+        "message_id": str(message.id),
+        "author_id": str(message.author.id),
+        "author_display_name": message.author.display_name,
+        "clean_content": clean_message_content(message, bot_user),
+    }
+
+
 def mention_log_record(
     message: discord.Message,
     bot_user: discord.ClientUser,
     bot_reply: str,
+    recent_messages: Sequence[discord.Message] | None = None,
 ) -> dict[str, Any]:
     guild = message.guild
     channel_name = getattr(message.channel, "name", "direct-message")
@@ -32,6 +47,10 @@ def mention_log_record(
         "author_id": str(message.author.id),
         "author_display_name": message.author.display_name,
         "clean_content": clean_message_content(message, bot_user),
+        "recent_context": [
+            context_log_record(recent_message, bot_user)
+            for recent_message in recent_messages or []
+        ],
         "bot_reply": bot_reply,
     }
 
@@ -47,6 +66,16 @@ def log_mention_reply(
     message: discord.Message,
     bot_user: discord.ClientUser,
     bot_reply: str,
+    *,
+    recent_messages: Sequence[discord.Message] | None = None,
     path: Path = DEFAULT_LOG_PATH,
 ) -> None:
-    append_jsonl(path, mention_log_record(message, bot_user, bot_reply))
+    append_jsonl(
+        path,
+        mention_log_record(
+            message,
+            bot_user,
+            bot_reply,
+            recent_messages=recent_messages,
+        ),
+    )

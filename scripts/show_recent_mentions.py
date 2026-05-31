@@ -54,8 +54,19 @@ def print_record(record: dict[str, Any]) -> None:
     author = record.get("author_display_name") or record.get("author_id") or "unknown-author"
     user_text = record.get("clean_content") or ""
     bot_reply = record.get("bot_reply") or ""
+    recent_context = record.get("recent_context") or []
 
     print(f"[{timestamp}] #{channel} / {author}")
+    if recent_context:
+        print("Context:")
+        for item in recent_context:
+            item_author = (
+                item.get("author_display_name")
+                or item.get("author_id")
+                or "unknown-author"
+            )
+            item_text = item.get("clean_content") or ""
+            print(f"- {item_author}: {item_text}")
     print(f"User: {user_text}")
     print(f"Bot: {bot_reply}")
 
@@ -63,7 +74,18 @@ def print_record(record: dict[str, Any]) -> None:
 def print_curator_input(record: dict[str, Any]) -> None:
     user_text = record.get("clean_content") or ""
     bot_reply = record.get("bot_reply") or ""
+    recent_context = record.get("recent_context") or []
 
+    if recent_context:
+        print("直近文脈:")
+        for item in recent_context:
+            item_author = (
+                item.get("author_display_name")
+                or item.get("author_id")
+                or "unknown-author"
+            )
+            item_text = item.get("clean_content") or ""
+            print(f"- {item_author}: {item_text}")
     print(f"ユーザー: {user_text}")
     print(f"Bot: {bot_reply}")
 

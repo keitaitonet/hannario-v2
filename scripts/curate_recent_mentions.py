@@ -29,7 +29,22 @@ def parse_args() -> argparse.Namespace:
 def record_to_curator_text(record: dict) -> str:
     user_text = record.get("clean_content") or ""
     bot_reply = record.get("bot_reply") or ""
-    return f"ユーザー: {user_text}\nBot: {bot_reply}"
+    recent_context = record.get("recent_context") or []
+    lines = []
+
+    if recent_context:
+        lines.append("直近文脈:")
+        for item in recent_context:
+            item_author = (
+                item.get("author_display_name")
+                or item.get("author_id")
+                or "unknown-author"
+            )
+            item_text = item.get("clean_content") or ""
+            lines.append(f"- {item_author}: {item_text}")
+
+    lines.extend([f"ユーザー: {user_text}", f"Bot: {bot_reply}"])
+    return "\n".join(lines)
 
 
 def records_to_curator_input(records: list[dict]) -> str:

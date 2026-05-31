@@ -156,7 +156,13 @@ class HannarioClient(discord.Client):
                 )
 
         await message.reply(reply, mention_author=False)
-        await asyncio.to_thread(log_mention_reply, message, self.user, reply)
+        await asyncio.to_thread(
+            log_mention_reply,
+            message,
+            self.user,
+            reply,
+            recent_messages=recent_messages,
+        )
 
 
 def main() -> None:
