@@ -264,6 +264,12 @@ uv run python scripts/show_channel_summaries.py --channel はんなり男
 uv run python scripts/show_channel_summaries.py --channel はんなり男 --show-context
 ```
 
+To preview a mention input with the latest saved same-channel summary:
+
+```sh
+uv run python scripts/preview_mention_input_with_summary.py
+```
+
 To print recent logs as curator input text:
 
 ```sh
