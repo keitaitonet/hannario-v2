@@ -86,9 +86,12 @@ Copy the printed `LETTA_AGENT_ID=...` line into `.env`.
 Then register Discord observation and schedule tools with the Letta agent:
 
 ```sh
-uv run python scripts/register_letta_discord_tools.py
-uv run python scripts/register_letta_db_tools.py
+uv run python scripts/register_letta_tools.py
 ```
+
+The narrower `scripts/register_letta_discord_tools.py` and
+`scripts/register_letta_db_tools.py` scripts are also available when you only
+want to refresh one tool group.
 
 The registered tools are:
 
