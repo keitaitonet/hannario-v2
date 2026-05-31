@@ -29,14 +29,18 @@ Edit `.env.letta` and set `OPENAI_API_KEY`. Do not wrap the value in quotes.
 Then start Letta:
 
 ```sh
-docker run \
-  --env-file .env.letta \
-  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
-  -p 8283:8283 \
-  letta/letta:latest
+docker compose up -d letta
 ```
 
-The default local Letta URL is `http://localhost:8283`.
+The default local Letta URL is `http://localhost:8283`. Letta's database is
+stored in the Docker volume `hannario-v2_letta_pgdata`.
+
+Useful commands:
+
+```sh
+docker compose logs -f letta
+docker compose down
+```
 
 ## Letta smoke test
 

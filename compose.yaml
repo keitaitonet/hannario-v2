@@ -1,0 +1,13 @@
+services:
+  letta:
+    image: letta/letta:latest
+    container_name: hannario-letta
+    env_file:
+      - .env.letta
+    ports:
+      - "8283:8283"
+    volumes:
+      - letta_pgdata:/var/lib/postgresql/data
+
+volumes:
+  letta_pgdata:
