@@ -2,7 +2,7 @@ import os
 from typing import Any
 
 from dotenv import load_dotenv
-from letta_client import Letta
+from letta_client import Letta, MessageCreate, TextContent
 
 
 DEFAULT_BASE_URL = "http://localhost:8283"
@@ -81,7 +81,14 @@ def main() -> None:
 
     response = client.agents.messages.create(
         agent_id=agent.id,
-        input="こんにちは。短く自己紹介して。",
+        messages=[
+            MessageCreate(
+                role="user",
+                content=[
+                    TextContent(text="こんにちは。短く自己紹介して。"),
+                ],
+            )
+        ],
     )
 
     text = extract_assistant_text(response)
