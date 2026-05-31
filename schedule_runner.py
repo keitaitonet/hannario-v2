@@ -33,6 +33,7 @@ class ScheduledTaskDelivery:
     should_send: bool
     reason: str
     note: str | None = None
+    internal_result: str | None = None
     status_after: str | None = None
 
 
@@ -86,6 +87,7 @@ def scheduled_task_delivery_record(delivery: ScheduledTaskDelivery) -> dict[str,
         "should_send": delivery.should_send,
         "reason": delivery.reason,
         "status_after": delivery.status_after,
+        "internal_result": delivery.internal_result,
     }
 
 
@@ -106,6 +108,7 @@ def build_scheduled_task_delivery(
     checked_at: str,
     should_send: bool,
     reason: str,
+    internal_result: str | None = None,
     status_after: str | None = None,
 ) -> ScheduledTaskDelivery:
     return ScheduledTaskDelivery(
@@ -117,5 +120,6 @@ def build_scheduled_task_delivery(
         note=task.note,
         should_send=should_send,
         reason=reason,
+        internal_result=internal_result,
         status_after=status_after,
     )

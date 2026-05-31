@@ -55,6 +55,9 @@ def print_record(record: dict[str, Any]) -> None:
     note = record.get("note") or ""
     if note:
         print(f"Note: {note}")
+    internal_result = record.get("internal_result") or ""
+    if internal_result:
+        print(f"Internal result: {internal_result}")
 
 
 def main() -> None:

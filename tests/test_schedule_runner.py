@@ -67,6 +67,7 @@ class ScheduleRunnerTest(unittest.TestCase):
                 checked_at="2026-06-01T10:00:00+00:00",
                 should_send=True,
                 reason="ok",
+                internal_result="考えた",
                 status_after="done",
             )
 
@@ -81,6 +82,7 @@ class ScheduleRunnerTest(unittest.TestCase):
         self.assertEqual(record["message"], "hello")
         self.assertEqual(record["note"], "delivery note")
         self.assertTrue(record["should_send"])
+        self.assertEqual(record["internal_result"], "考えた")
         self.assertEqual(record["status_after"], "done")
 
 
