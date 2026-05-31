@@ -1,12 +1,11 @@
 import argparse
 import os
 import re
-from typing import Literal
 
 from dotenv import load_dotenv
 from letta_client import Letta
-from pydantic import BaseModel, model_validator
 
+from curator_schema import CuratorProposal
 from letta_settings import letta_base_url
 
 
@@ -14,25 +13,6 @@ NICKNAME_KEYWORDS = ("呼んで", "呼ぶ")
 AVOIDANCE_KEYWORDS = ("やめて", "嫌", "苦手")
 DURABLE_PREFERENCE_KEYWORDS = ("覚えて", "今後")
 PLAYBOOK_ID_PATTERN = re.compile(r"^P(?P<number>\d{3}):", re.MULTILINE)
-
-
-class CuratorProposal(BaseModel):
-    action: Literal["none", "append", "replace"]
-    target: Literal["playbook", "persona", "server_context"] | None
-    reason: str
-    proposal: str | None
-
-    @model_validator(mode="after")
-    def validate_action_fields(self) -> "CuratorProposal":
-        if self.action == "none":
-            if self.target is not None or self.proposal is not None:
-                raise ValueError("none action must not include target or proposal")
-            return self
-
-        if self.target is None or self.proposal is None:
-            raise ValueError(f"{self.action} action requires target and proposal")
-
-        return self
 
 
 def parse_args() -> argparse.Namespace:
