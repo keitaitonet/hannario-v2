@@ -4,10 +4,7 @@ from typing import Any
 from dotenv import load_dotenv
 from letta_client import Letta, MessageCreate, TextContent
 
-
-DEFAULT_BASE_URL = "http://localhost:8283"
-DEFAULT_MODEL = "openai/gpt-4o-mini"
-DEFAULT_EMBEDDING = "openai/text-embedding-3-small"
+from letta_settings import letta_base_url, letta_embedding, letta_model
 
 
 def read_text(value: Any) -> str | None:
@@ -60,11 +57,11 @@ def extract_assistant_text(response: Any) -> str | None:
 def main() -> None:
     load_dotenv()
 
-    client = Letta(base_url=os.getenv("LETTA_BASE_URL", DEFAULT_BASE_URL))
+    client = Letta(base_url=letta_base_url())
     agent = client.agents.create(
         name=os.getenv("LETTA_AGENT_NAME", "hannario-smoke-test"),
-        model=os.getenv("LETTA_MODEL", DEFAULT_MODEL),
-        embedding=os.getenv("LETTA_EMBEDDING", DEFAULT_EMBEDDING),
+        model=letta_model(),
+        embedding=letta_embedding(),
         memory_blocks=[
             {
                 "label": "persona",

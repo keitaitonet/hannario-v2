@@ -55,6 +55,16 @@ The smoke test creates a new throwaway agent and sends one message using:
 - `openai/gpt-4o-mini`
 - `openai/text-embedding-3-small`
 
+## Create the Discord agent
+
+With the Letta server running:
+
+```sh
+uv run python scripts/create_agent.py
+```
+
+Copy the printed `LETTA_AGENT_ID=...` line into `.env`.
+
 ## Run
 
 ```sh
