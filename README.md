@@ -21,6 +21,8 @@ Discord
   task, and local OpenAI helper scripts.
 - Letta data is stored in the Docker volume `hannario-v2_letta_pgdata`.
 - Local runtime logs are written under `logs/`, which is ignored by git.
+- Local app data that should survive restarts but not be committed is stored in
+  SQLite at `data/local.sqlite3`.
 
 ## Setup
 
@@ -127,6 +129,10 @@ DISCORD_HEARTBEAT_OBSERVATION_LIMIT=20
 DISCORD_HEARTBEAT_POST_ENABLED=0
 DISCORD_HEARTBEAT_POST_COOLDOWN_SECONDS=3600
 DISCORD_HEARTBEAT_POST_MAX_CHARS=500
+DISCORD_SCHEDULE_ENABLED=0
+DISCORD_SCHEDULE_INTERVAL_SECONDS=30
+DISCORD_SCHEDULE_DUE_LIMIT=5
+HANNARIO_DB_PATH=data/local.sqlite3
 ```
 
 Then run:
@@ -172,6 +178,9 @@ uv run python bot.py
   observations to Letta for a private status check and logs the structured
   decision. If `DISCORD_HEARTBEAT_POST_ENABLED=1`, valid `consider_reply`
   decisions may be posted to Discord with a per-channel cooldown.
+- If `DISCORD_SCHEDULE_ENABLED=1`, the bot checks SQLite scheduled tasks every
+  `DISCORD_SCHEDULE_INTERVAL_SECONDS` seconds. Due `pending` tasks are posted
+  to their Discord channel and marked `done` only after a successful send.
 - The bot replies in the same channel.
 - The bot ignores messages from itself and other bots.
 - If Letta fails, the bot sends a short fallback reply instead of crashing.
@@ -214,6 +223,55 @@ uv run python scripts/summarize_all_observed_channels.py --limit 20 --save
 
 The bot logs mention conversations and non-mention user message observations.
 Only triggered conversations are sent directly to Letta.
+
+## Schedule Database
+
+Scheduled Discord tasks are stored in SQLite. The default database path is
+`data/local.sqlite3`; override it with `HANNARIO_DB_PATH` if needed.
+
+Initialize the database:
+
+```sh
+uv run python scripts/init_schedule_db.py
+```
+
+Create a task:
+
+```sh
+uv run python scripts/create_scheduled_task.py \
+  --channel-id 1421460487639535667 \
+  --due-at 2026-06-01T21:00:00 \
+  --message "21時です"
+```
+
+Naive `--due-at` values are interpreted as `Asia/Tokyo` by default and stored
+as UTC in SQLite.
+
+List pending tasks:
+
+```sh
+uv run python scripts/list_scheduled_tasks.py
+```
+
+Show tasks that are due now:
+
+```sh
+uv run python scripts/list_scheduled_tasks.py --due
+```
+
+Mark a task complete or cancel it:
+
+```sh
+uv run python scripts/update_scheduled_task_status.py 1 --done
+uv run python scripts/update_scheduled_task_status.py 1 --cancel
+```
+
+When `DISCORD_SCHEDULE_ENABLED=1`, the running bot posts due tasks
+automatically. Delivery attempts are appended to `logs/scheduled_tasks.jsonl`:
+
+```sh
+uv run python scripts/show_recent_schedule_deliveries.py --limit 5
+```
 
 Triggered records in `logs/discord_mentions.jsonl` contain minimal Discord
 context, the recent channel context sent to Letta, the optional supplemental

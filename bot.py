@@ -37,6 +37,13 @@ from response_policy import (
     load_response_policy_config_from_env,
     mark_channel_active,
 )
+from schedule_db import list_due_scheduled_tasks, mark_scheduled_task_done
+from schedule_runner import (
+    ScheduleConfig,
+    append_scheduled_task_delivery_log,
+    build_scheduled_task_delivery,
+    load_schedule_config_from_env,
+)
 
 
 COMMAND_PREFIX = "!"
@@ -289,6 +296,7 @@ class HannarioClient(discord.Client):
         letta_agent_id: str | None,
         auto_summary_config: AutoSummaryConfig,
         heartbeat_config: HeartbeatConfig,
+        schedule_config: ScheduleConfig,
         response_policy_config: ResponsePolicyConfig,
         **kwargs: Any,
     ):
@@ -297,11 +305,13 @@ class HannarioClient(discord.Client):
         self.letta_agent_id = letta_agent_id
         self.auto_summary_config = auto_summary_config
         self.heartbeat_config = heartbeat_config
+        self.schedule_config = schedule_config
         self.response_policy_config = response_policy_config
         self.conversation_states: ConversationStateStore = {}
         self.heartbeat_post_times: dict[str, datetime] = {}
         self.auto_summary_task: asyncio.Task[None] | None = None
         self.heartbeat_task: asyncio.Task[None] | None = None
+        self.schedule_task: asyncio.Task[None] | None = None
 
     async def on_ready(self) -> None:
         if self.user is None:
@@ -310,6 +320,7 @@ class HannarioClient(discord.Client):
         logging.info("Logged in as %s (id=%s)", self.user, self.user.id)
         self.start_auto_summary_task()
         self.start_heartbeat_task()
+        self.start_schedule_task()
 
     def start_auto_summary_task(self) -> None:
         if not self.auto_summary_config.enabled:
@@ -345,6 +356,24 @@ class HannarioClient(discord.Client):
         logging.info(
             "Started Discord heartbeat task: interval=%ds",
             self.heartbeat_config.interval_seconds,
+        )
+
+    def start_schedule_task(self) -> None:
+        if not self.schedule_config.enabled:
+            return
+        if self.schedule_task is not None and not self.schedule_task.done():
+            return
+
+        self.schedule_task = asyncio.create_task(
+            run_schedule_loop(
+                self.schedule_config,
+                self,
+            ),
+        )
+        logging.info(
+            "Started Discord schedule task: interval=%ds db_path=%s",
+            self.schedule_config.interval_seconds,
+            self.schedule_config.db_path,
         )
 
     async def on_message(self, message: discord.Message) -> None:
@@ -541,6 +570,129 @@ async def run_heartbeat_loop(
         await asyncio.sleep(config.interval_seconds)
 
 
+async def run_schedule_loop(
+    config: ScheduleConfig,
+    discord_client: discord.Client,
+) -> None:
+    while True:
+        try:
+            await run_due_scheduled_tasks_once(config, discord_client)
+        except Exception:
+            logging.exception("Discord schedule run failed")
+
+        await asyncio.sleep(config.interval_seconds)
+
+
+async def run_due_scheduled_tasks_once(
+    config: ScheduleConfig,
+    discord_client: discord.Client,
+) -> None:
+    checked_at = datetime.now(UTC).isoformat()
+    tasks = await asyncio.to_thread(
+        list_due_scheduled_tasks,
+        db_path=config.db_path,
+        limit=config.due_limit,
+    )
+    if not tasks:
+        logging.info("Discord schedule tick checked_at=%s due=0", checked_at)
+        return
+
+    logging.info(
+        "Discord schedule tick checked_at=%s due=%d",
+        checked_at,
+        len(tasks),
+    )
+    for task in tasks:
+        send_result = await send_channel_message(
+            discord_client,
+            task.channel_id,
+            task.message,
+        )
+        if send_result.should_post:
+            updated_task = await asyncio.to_thread(
+                mark_scheduled_task_done,
+                task.id,
+                db_path=config.db_path,
+            )
+            status_after = updated_task.status if updated_task is not None else None
+            logging.info(
+                "Posted scheduled task #%s to channel %s",
+                task.id,
+                task.channel_id,
+            )
+        else:
+            status_after = task.status
+            logging.warning(
+                "Skipping scheduled task #%s: reason=%s channel_id=%s",
+                task.id,
+                send_result.reason,
+                task.channel_id,
+            )
+
+        delivery = build_scheduled_task_delivery(
+            task,
+            checked_at=checked_at,
+            should_send=send_result.should_post,
+            reason=send_result.reason,
+            status_after=status_after,
+        )
+        await asyncio.to_thread(
+            append_scheduled_task_delivery_log,
+            config.log_path,
+            delivery,
+        )
+
+
+async def send_channel_message(
+    discord_client: discord.Client,
+    channel_id: str,
+    message: str,
+) -> HeartbeatPostDecision:
+    try:
+        numeric_channel_id = int(channel_id)
+    except ValueError:
+        return HeartbeatPostDecision(
+            False,
+            "invalid_channel_id",
+            channel_id=channel_id,
+            message=message,
+        )
+
+    channel = discord_client.get_channel(numeric_channel_id)
+    if channel is None:
+        try:
+            channel = await discord_client.fetch_channel(numeric_channel_id)
+        except (discord.Forbidden, discord.HTTPException, discord.NotFound):
+            logging.warning(
+                "Skipping message because channel %s could not be fetched",
+                channel_id,
+                exc_info=True,
+            )
+            return HeartbeatPostDecision(
+                False,
+                "fetch_failed",
+                channel_id=channel_id,
+                message=message,
+            )
+
+    send = getattr(channel, "send", None)
+    if send is None:
+        return HeartbeatPostDecision(
+            False,
+            "cannot_send",
+            channel_id=channel_id,
+            message=message,
+        )
+
+    await send(message)
+    return HeartbeatPostDecision(
+        True,
+        "ok",
+        channel_id=channel_id,
+        message=message,
+    )
+
+
 async def maybe_post_heartbeat_result(
     config: HeartbeatConfig,
     result,
@@ -558,51 +710,14 @@ async def maybe_post_heartbeat_result(
         return post_decision
 
     assert post_decision.channel_id is not None
-    try:
-        channel_id = int(post_decision.channel_id)
-    except ValueError:
-        logging.warning(
-            "Skipping heartbeat post because channel_id is invalid: %s",
-            post_decision.channel_id,
-        )
-        return HeartbeatPostDecision(
-            False,
-            "invalid_channel_id",
-            channel_id=post_decision.channel_id,
-            message=post_decision.message,
-        )
+    send_result = await send_channel_message(
+        discord_client,
+        post_decision.channel_id,
+        post_decision.message,
+    )
+    if not send_result.should_post:
+        return send_result
 
-    channel = discord_client.get_channel(channel_id)
-    if channel is None:
-        try:
-            channel = await discord_client.fetch_channel(channel_id)
-        except (discord.Forbidden, discord.HTTPException, discord.NotFound):
-            logging.warning(
-                "Skipping heartbeat post because channel %s could not be fetched",
-                post_decision.channel_id,
-                exc_info=True,
-            )
-            return HeartbeatPostDecision(
-                False,
-                "fetch_failed",
-                channel_id=post_decision.channel_id,
-                message=post_decision.message,
-            )
-
-    send = getattr(channel, "send", None)
-    if send is None:
-        logging.warning(
-            "Skipping heartbeat post because channel %s cannot send messages",
-            post_decision.channel_id,
-        )
-        return HeartbeatPostDecision(
-            False,
-            "cannot_send",
-            channel_id=post_decision.channel_id,
-            message=post_decision.message,
-        )
-
-    await send(post_decision.message)
     record_heartbeat_post(last_post_at_by_channel, post_decision.channel_id)
     logging.info("Posted heartbeat message to channel %s", post_decision.channel_id)
     return post_decision
@@ -626,6 +741,7 @@ def main() -> None:
     letta_agent_id = os.getenv("LETTA_AGENT_ID")
     auto_summary_config = load_auto_summary_config_from_env()
     heartbeat_config = load_heartbeat_config_from_env()
+    schedule_config = load_schedule_config_from_env()
     response_policy_config = load_response_policy_config_from_env()
 
     client = HannarioClient(
@@ -634,6 +750,7 @@ def main() -> None:
         letta_agent_id=letta_agent_id,
         auto_summary_config=auto_summary_config,
         heartbeat_config=heartbeat_config,
+        schedule_config=schedule_config,
         response_policy_config=response_policy_config,
     )
     client.run(token, log_handler=None)
