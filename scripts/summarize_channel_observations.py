@@ -1,6 +1,9 @@
 import argparse
+import json
 import os
+from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from openai import OpenAI
 
@@ -13,6 +16,7 @@ from show_recent_observations import (
 
 
 DEFAULT_SUMMARY_MODEL = DEFAULT_CURATOR_MODEL
+DEFAULT_SUMMARY_LOG_PATH = Path("logs/channel_summaries.jsonl")
 
 
 def parse_args() -> argparse.Namespace:
@@ -41,6 +45,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--channel-id",
         help="Summarize records from this Discord channel ID.",
+    )
+    parser.add_argument(
+        "--save",
+        action="store_true",
+        help="Append the summary result to logs/channel_summaries.jsonl.",
+    )
+    parser.add_argument(
+        "--summary-path",
+        type=Path,
+        default=DEFAULT_SUMMARY_LOG_PATH,
+        help="Path to write JSONL summaries when --save is used.",
     )
     return parser.parse_args()
 
@@ -79,6 +94,48 @@ def summarize_context(context: str) -> str:
     return extract_response_text(response)
 
 
+def summary_log_record(
+    records: list[dict[str, Any]],
+    context: str,
+    summary: str,
+    *,
+    model: str,
+) -> dict[str, Any]:
+    first = records[0]
+    last = records[-1]
+    return {
+        "created_at": datetime.now(UTC).isoformat(),
+        "channel_id": str(last.get("channel_id")) if last.get("channel_id") else None,
+        "channel_name": last.get("channel_name"),
+        "record_count": len(records),
+        "first_observed_at": first.get("timestamp"),
+        "last_observed_at": last.get("timestamp"),
+        "model": model,
+        "context": context,
+        "summary": summary,
+    }
+
+
+def save_summary(
+    path: Path,
+    records: list[dict[str, Any]],
+    context: str,
+    summary: str,
+    *,
+    model: str,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    record = summary_log_record(
+        records,
+        context,
+        summary,
+        model=model,
+    )
+    with path.open("a", encoding="utf-8") as file:
+        file.write(json.dumps(record, ensure_ascii=False, sort_keys=True))
+        file.write("\n")
+
+
 def main() -> None:
     args = parse_args()
     require_channel_filter(args.channel, args.channel_id)
@@ -106,9 +163,14 @@ def main() -> None:
     print("Input:")
     print(context)
     print()
+    summary = summarize_context(context)
     print("Summary:")
-    print(summarize_context(context))
+    print(summary)
     print()
+    if args.save:
+        model = os.getenv("SUMMARY_MODEL", DEFAULT_SUMMARY_MODEL)
+        save_summary(args.summary_path, records, context, summary, model=model)
+        print(f"Summary saved to {args.summary_path}.")
     print("No memory was written.")
 
 

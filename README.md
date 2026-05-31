@@ -251,7 +251,10 @@ To summarize recent observations for one channel without writing memory:
 ```sh
 uv run python scripts/summarize_channel_observations.py --channel はんなり男
 uv run python scripts/summarize_channel_observations.py --channel-id 1421460487639535667
+uv run python scripts/summarize_channel_observations.py --channel はんなり男 --save
 ```
+
+Saved summaries are appended to `logs/channel_summaries.jsonl`.
 
 To print recent logs as curator input text:
 
