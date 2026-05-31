@@ -239,6 +239,13 @@ uv run python scripts/show_channel_context.py --channel はんなり男
 uv run python scripts/show_channel_context.py --channel-id 1421460487639535667
 ```
 
+To compare the latest mention's saved Discord API context with observed
+same-channel context:
+
+```sh
+uv run python scripts/show_context_debug.py
+```
+
 To print recent logs as curator input text:
 
 ```sh
