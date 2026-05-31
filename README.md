@@ -67,6 +67,9 @@ Copy the printed `LETTA_AGENT_ID=...` line into `.env`.
 
 ## Run
 
+Make sure `.env` contains `DISCORD_TOKEN`, `LETTA_BASE_URL`, and
+`LETTA_AGENT_ID`.
+
 ```sh
 uv run python bot.py
 ```
@@ -74,4 +77,4 @@ uv run python bot.py
 ## Current behavior
 
 - `!ping` replies with `pong`
-- Mentioning the bot replies with a fixed test message
+- Mentioning the bot sends the message to the configured Letta agent
