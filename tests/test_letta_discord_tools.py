@@ -125,7 +125,7 @@ class LettaDiscordToolsTest(unittest.TestCase):
             result = function("pending", 10, "123")
 
             self.assertIn("scheduled_discord_tasks:", result)
-            self.assertIn("#1 [pending] channel_id=123", result)
+            self.assertIn("#1 [pending] kind=post channel_id=123", result)
             self.assertIn("message=予定です", result)
 
     def test_create_discord_schedule_source(self) -> None:
@@ -146,6 +146,7 @@ class LettaDiscordToolsTest(unittest.TestCase):
             self.assertEqual(len(tasks), 1)
             self.assertEqual(tasks[0].channel_id, "123")
             self.assertEqual(tasks[0].message, "21時です")
+            self.assertEqual(tasks[0].kind, "post")
 
     def test_create_discord_schedule_rejects_past_due_at(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

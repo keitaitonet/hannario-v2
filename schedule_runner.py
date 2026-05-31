@@ -27,10 +27,12 @@ class ScheduleConfig:
 class ScheduledTaskDelivery:
     checked_at: str
     task_id: int
+    kind: str
     channel_id: str
     message: str
     should_send: bool
     reason: str
+    note: str | None = None
     status_after: str | None = None
 
 
@@ -77,8 +79,10 @@ def scheduled_task_delivery_record(delivery: ScheduledTaskDelivery) -> dict[str,
     return {
         "checked_at": delivery.checked_at,
         "task_id": delivery.task_id,
+        "kind": delivery.kind,
         "channel_id": delivery.channel_id,
         "message": delivery.message,
+        "note": delivery.note,
         "should_send": delivery.should_send,
         "reason": delivery.reason,
         "status_after": delivery.status_after,
@@ -107,8 +111,10 @@ def build_scheduled_task_delivery(
     return ScheduledTaskDelivery(
         checked_at=checked_at,
         task_id=task.id,
+        kind=task.kind,
         channel_id=task.channel_id,
         message=task.message,
+        note=task.note,
         should_send=should_send,
         reason=reason,
         status_after=status_after,

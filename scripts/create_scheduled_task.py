@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from schedule_db import create_scheduled_task, db_path_from_env
+from schedule_db import SCHEDULE_KIND_POST, create_scheduled_task, db_path_from_env
 
 
 DEFAULT_TIMEZONE = "Asia/Tokyo"
@@ -29,6 +29,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--created-by", help="Optional creator user id or name.")
     parser.add_argument("--source-message-id", help="Optional Discord source message id.")
     parser.add_argument(
+        "--kind",
+        choices=["post"],
+        default=SCHEDULE_KIND_POST,
+        help="Schedule kind. Only post is active in the bot for now.",
+    )
+    parser.add_argument("--note", help="Optional internal note for this scheduled task.")
+    parser.add_argument(
         "--db-path",
         type=Path,
         default=db_path_from_env(),
@@ -50,15 +57,19 @@ def main() -> None:
         channel_id=args.channel_id,
         message=args.message,
         due_at=parse_due_at(args.due_at, args.timezone),
+        kind=args.kind,
+        note=args.note,
         created_by=args.created_by,
         source_message_id=args.source_message_id,
         db_path=args.db_path,
     )
     print(
         f"created task #{task.id}: status={task.status} "
-        f"channel_id={task.channel_id} due_at={task.due_at}"
+        f"kind={task.kind} channel_id={task.channel_id} due_at={task.due_at}"
     )
     print(f"message: {task.message}")
+    if task.note:
+        print(f"note: {task.note}")
 
 
 if __name__ == "__main__":

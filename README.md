@@ -233,6 +233,8 @@ Only triggered conversations are sent directly to Letta.
 
 Scheduled Discord tasks are stored in SQLite. The default database path is
 `data/local.sqlite3`; override it with `HANNARIO_DB_PATH` if needed.
+Tasks have a `kind`; existing reminders use `post`. The schema also stores an
+optional internal `note` so future non-post tasks can act as notes to the bot.
 
 Initialize the database:
 
@@ -246,7 +248,8 @@ Create a task:
 uv run python scripts/create_scheduled_task.py \
   --channel-id 1421460487639535667 \
   --due-at 2026-06-01T21:00:00 \
-  --message "21時です"
+  --message "21時です" \
+  --note "manual smoke test"
 ```
 
 Naive `--due-at` values are interpreted as `Asia/Tokyo` by default and stored

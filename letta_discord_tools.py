@@ -205,6 +205,18 @@ def list_discord_schedules(status: str = "pending", limit: int = 10, channel_id:
     connection = sqlite3.connect(path)
     connection.row_factory = sqlite3.Row
     try:
+        column_names = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(scheduled_tasks)").fetchall()
+        }
+        if "kind" not in column_names:
+            connection.execute(
+                "ALTER TABLE scheduled_tasks ADD COLUMN kind TEXT NOT NULL DEFAULT 'post'"
+            )
+        if "note" not in column_names:
+            connection.execute("ALTER TABLE scheduled_tasks ADD COLUMN note TEXT")
+        connection.commit()
+
         clauses = []
         params = []
         if safe_status != "all":
@@ -233,8 +245,8 @@ def list_discord_schedules(status: str = "pending", limit: int = 10, channel_id:
     lines = ["scheduled_discord_tasks:"]
     for row in rows:
         lines.append(
-            f"#{row['id']} [{row['status']}] channel_id={row['channel_id']} "
-            f"due_at={row['due_at']} message={row['message']}"
+            f"#{row['id']} [{row['status']}] kind={row['kind']} channel_id={row['channel_id']} "
+            f"due_at={row['due_at']} message={row['message']} note={row['note'] or ''}"
         )
     return "\n".join(lines)
 '''
@@ -318,7 +330,9 @@ def create_discord_schedule(
                 due_at TEXT NOT NULL,
                 status TEXT NOT NULL DEFAULT 'pending'
                     CHECK (status IN ('pending', 'done', 'cancelled')),
+                kind TEXT NOT NULL DEFAULT 'post',
                 created_at TEXT NOT NULL,
+                note TEXT,
                 created_by TEXT,
                 source_message_id TEXT,
                 completed_at TEXT,
@@ -332,16 +346,27 @@ def create_discord_schedule(
             ON scheduled_tasks (status, due_at)
             """
         )
+        column_names = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(scheduled_tasks)").fetchall()
+        }
+        if "kind" not in column_names:
+            connection.execute(
+                "ALTER TABLE scheduled_tasks ADD COLUMN kind TEXT NOT NULL DEFAULT 'post'"
+            )
+        if "note" not in column_names:
+            connection.execute("ALTER TABLE scheduled_tasks ADD COLUMN note TEXT")
         cursor = connection.execute(
             """
             INSERT INTO scheduled_tasks (
                 channel_id,
                 message,
                 due_at,
+                kind,
                 status,
                 created_at
             )
-            VALUES (?, ?, ?, 'pending', ?)
+            VALUES (?, ?, ?, 'post', 'pending', ?)
             """,
             (str(channel_id), str(message), due_at_utc, created_at),
         )

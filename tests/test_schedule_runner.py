@@ -59,6 +59,7 @@ class ScheduleRunnerTest(unittest.TestCase):
                 channel_id="123",
                 message="hello",
                 due_at=datetime(2026, 6, 1, 10, 0, tzinfo=UTC),
+                note="delivery note",
                 db_path=db_path,
             )
             delivery = build_scheduled_task_delivery(
@@ -75,8 +76,10 @@ class ScheduleRunnerTest(unittest.TestCase):
 
         self.assertEqual(scheduled_task_delivery_record(delivery), record)
         self.assertEqual(record["task_id"], 1)
+        self.assertEqual(record["kind"], "post")
         self.assertEqual(record["channel_id"], "123")
         self.assertEqual(record["message"], "hello")
+        self.assertEqual(record["note"], "delivery note")
         self.assertTrue(record["should_send"])
         self.assertEqual(record["status_after"], "done")
 

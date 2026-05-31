@@ -41,16 +41,20 @@ def read_recent_records(path: Path, limit: int) -> list[dict[str, Any]]:
 def print_record(record: dict[str, Any]) -> None:
     checked_at = record.get("checked_at") or "unknown-time"
     task_id = record.get("task_id") or "-"
+    kind = record.get("kind") or "post"
     channel_id = record.get("channel_id") or "-"
     reason = record.get("reason") or "-"
     should_send = record.get("should_send")
     status_after = record.get("status_after") or "-"
 
-    print(f"[{checked_at}] task=#{task_id} channel_id={channel_id}")
+    print(f"[{checked_at}] task=#{task_id} kind={kind} channel_id={channel_id}")
     print(f"Send: should_send={should_send} reason={reason} status_after={status_after}")
     message = record.get("message") or ""
     if message:
         print(f"Message: {message}")
+    note = record.get("note") or ""
+    if note:
+        print(f"Note: {note}")
 
 
 def main() -> None:

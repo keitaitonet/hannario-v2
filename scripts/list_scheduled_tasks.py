@@ -46,8 +46,13 @@ def main() -> None:
         return
 
     for task in tasks:
-        print(f"#{task.id} [{task.status}] due_at={task.due_at} channel_id={task.channel_id}")
+        print(
+            f"#{task.id} [{task.status}] kind={task.kind} "
+            f"due_at={task.due_at} channel_id={task.channel_id}"
+        )
         print(f"message: {task.message}")
+        if task.note:
+            print(f"note: {task.note}")
         if task.created_by:
             print(f"created_by: {task.created_by}")
         if task.source_message_id:
