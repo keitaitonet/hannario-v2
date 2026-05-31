@@ -1,10 +1,11 @@
 import argparse
-import json
 import os
 import re
+from typing import Literal
 
 from dotenv import load_dotenv
 from letta_client import Letta
+from pydantic import BaseModel, model_validator
 
 from letta_settings import letta_base_url
 
@@ -13,6 +14,25 @@ NICKNAME_KEYWORDS = ("呼んで", "呼ぶ")
 AVOIDANCE_KEYWORDS = ("やめて", "嫌", "苦手")
 DURABLE_PREFERENCE_KEYWORDS = ("覚えて", "今後")
 PLAYBOOK_ID_PATTERN = re.compile(r"^P(?P<number>\d{3}):", re.MULTILINE)
+
+
+class CuratorProposal(BaseModel):
+    action: Literal["none", "append", "replace"]
+    target: Literal["playbook", "persona", "server_context"] | None
+    reason: str
+    proposal: str | None
+
+    @model_validator(mode="after")
+    def validate_action_fields(self) -> "CuratorProposal":
+        if self.action == "none":
+            if self.target is not None or self.proposal is not None:
+                raise ValueError("none action must not include target or proposal")
+            return self
+
+        if self.target is None or self.proposal is None:
+            raise ValueError(f"{self.action} action requires target and proposal")
+
+        return self
 
 
 def parse_args() -> argparse.Namespace:
@@ -72,31 +92,31 @@ def classify_signal(conversation: str) -> tuple[str, str] | None:
     return None
 
 
-def build_proposal(conversation: str, playbook_value: str) -> dict[str, str | None]:
+def build_proposal(conversation: str, playbook_value: str) -> CuratorProposal:
     signal = classify_signal(conversation)
     if signal is not None:
         reason, proposal_text = signal
         playbook_id = next_playbook_id(playbook_value)
-        return {
-            "action": "append",
-            "target": "playbook",
-            "reason": reason,
-            "proposal": f"{playbook_id}: {proposal_text}",
-        }
+        return CuratorProposal(
+            action="append",
+            target="playbook",
+            reason=reason,
+            proposal=f"{playbook_id}: {proposal_text}",
+        )
 
-    return {
-        "action": "none",
-        "target": None,
-        "reason": "No obvious durable memory update signal was detected by the stub.",
-        "proposal": None,
-    }
+    return CuratorProposal(
+        action="none",
+        target=None,
+        reason="No obvious durable memory update signal was detected by the stub.",
+        proposal=None,
+    )
 
 
 def main() -> None:
     args = parse_args()
     playbook_value = get_playbook_value()
     proposal = build_proposal(args.conversation, playbook_value)
-    print(json.dumps(proposal, ensure_ascii=False, indent=2))
+    print(proposal.model_dump_json(indent=2))
 
 
 if __name__ == "__main__":

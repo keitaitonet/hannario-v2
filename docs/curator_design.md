@@ -41,6 +41,9 @@ The curator should return one JSON object:
 }
 ```
 
+The current dry-run script validates this shape with Pydantic before printing
+JSON.
+
 Allowed actions:
 
 - `none`: no memory update.
