@@ -236,6 +236,12 @@ uv run python scripts/show_recent_observations.py --channel はんなり男
 uv run python scripts/show_recent_observations.py --channel-id 1421460487639535667
 ```
 
+To list channels found in the observation log:
+
+```sh
+uv run python scripts/list_observed_channels.py
+```
+
 To show observed context for one channel:
 
 ```sh
