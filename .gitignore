@@ -1,4 +1,5 @@
 .env
+.env.letta
 .venv/
 __pycache__/
 *.py[cod]

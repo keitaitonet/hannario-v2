@@ -24,7 +24,7 @@ Discord bot does not use it directly yet.
 cp .env.letta.example .env.letta
 ```
 
-Edit `.env.letta` and set `OPENAI_API_KEY`.
+Edit `.env.letta` and set `OPENAI_API_KEY`. Do not wrap the value in quotes.
 
 Then start Letta:
 
