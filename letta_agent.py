@@ -1,10 +1,33 @@
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any
 
 import discord
 from letta_client import Letta, MessageCreate, TextContent
 
 from discord_context import format_discord_message
+
+
+RETURN_MESSAGE_TYPES = [
+    "assistant_message",
+    "tool_call_message",
+    "tool_return_message",
+]
+
+
+@dataclass(frozen=True)
+class LettaToolEvent:
+    kind: str
+    name: str
+    arguments: str | None = None
+    status: str | None = None
+    text: str | None = None
+
+
+@dataclass(frozen=True)
+class LettaReply:
+    text: str
+    tool_events: list[LettaToolEvent]
 
 
 def read_text(value: Any) -> str | None:
@@ -31,6 +54,12 @@ def read_text(value: Any) -> str | None:
     return None
 
 
+def read_field(value: Any, field: str) -> Any:
+    if isinstance(value, dict):
+        return value.get(field)
+    return getattr(value, field, None)
+
+
 def extract_assistant_text(response: Any) -> str | None:
     messages = getattr(response, "messages", None)
     if messages is None and isinstance(response, dict):
@@ -54,14 +83,50 @@ def extract_assistant_text(response: Any) -> str | None:
     return None
 
 
-def ask_letta(
+def extract_tool_events(response: Any) -> list[LettaToolEvent]:
+    messages = getattr(response, "messages", None)
+    if messages is None and isinstance(response, dict):
+        messages = response.get("messages")
+
+    events = []
+    for message in messages or []:
+        message_type = read_field(message, "message_type")
+        if message_type == "tool_call_message":
+            tool_calls = read_field(message, "tool_calls") or []
+            tool_call = read_field(message, "tool_call")
+            if tool_call is not None and not tool_calls:
+                tool_calls = [tool_call]
+
+            for call in tool_calls:
+                events.append(
+                    LettaToolEvent(
+                        kind="call",
+                        name=str(read_field(call, "name") or "unknown-tool"),
+                        arguments=read_field(call, "arguments"),
+                    )
+                )
+
+        if message_type == "tool_return_message":
+            events.append(
+                LettaToolEvent(
+                    kind="return",
+                    name=str(read_field(message, "name") or "unknown-tool"),
+                    status=read_field(message, "status"),
+                    text=read_field(message, "tool_return"),
+                )
+            )
+
+    return events
+
+
+def ask_letta_with_diagnostics(
     client: Letta,
     agent_id: str,
     message: discord.Message,
     bot_user: discord.ClientUser,
     recent_messages: Sequence[discord.Message] | None = None,
     channel_summary: dict[str, Any] | None = None,
-) -> str:
+) -> LettaReply:
     response = client.agents.messages.create(
         agent_id=agent_id,
         messages=[
@@ -79,10 +144,29 @@ def ask_letta(
                 ],
             )
         ],
+        include_return_message_types=RETURN_MESSAGE_TYPES,
     )
 
     text = extract_assistant_text(response)
     if text is None:
         raise RuntimeError(f"Could not extract assistant text from {type(response)!r}")
 
-    return text
+    return LettaReply(text=text, tool_events=extract_tool_events(response))
+
+
+def ask_letta(
+    client: Letta,
+    agent_id: str,
+    message: discord.Message,
+    bot_user: discord.ClientUser,
+    recent_messages: Sequence[discord.Message] | None = None,
+    channel_summary: dict[str, Any] | None = None,
+) -> str:
+    return ask_letta_with_diagnostics(
+        client,
+        agent_id,
+        message,
+        bot_user,
+        recent_messages,
+        channel_summary,
+    ).text

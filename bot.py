@@ -9,7 +9,7 @@ from letta_client import Letta
 
 from channel_summaries import read_latest_channel_summary
 from conversation_log import log_mention_reply, log_observed_message
-from letta_agent import ask_letta
+from letta_agent import LettaToolEvent, ask_letta_with_diagnostics
 
 
 COMMAND_PREFIX = "!"
@@ -52,6 +52,35 @@ def context_message_limit() -> int:
 
 def include_channel_summary() -> bool:
     return os.getenv("DISCORD_INCLUDE_CHANNEL_SUMMARY", "").strip().lower() in TRUTHY_ENV_VALUES
+
+
+def truncate_log_text(value: str | None, limit: int = 240) -> str:
+    if value is None:
+        return ""
+    normalized = " ".join(value.split())
+    if len(normalized) <= limit:
+        return normalized
+    return f"{normalized[:limit]}..."
+
+
+def log_letta_tool_events(discord_message_id: int, events: list[LettaToolEvent]) -> None:
+    for event in events:
+        if event.kind == "call":
+            logging.info(
+                "Letta tool call for Discord message %s: %s args=%s",
+                discord_message_id,
+                event.name,
+                truncate_log_text(event.arguments),
+            )
+        elif event.kind == "return":
+            logging.info(
+                "Letta tool return for Discord message %s: %s status=%s chars=%d preview=%s",
+                discord_message_id,
+                event.name,
+                event.status,
+                len(event.text or ""),
+                truncate_log_text(event.text),
+            )
 
 
 async def fetch_recent_channel_messages(
@@ -154,9 +183,9 @@ class HannarioClient(discord.Client):
 
         async with message.channel.typing():
             try:
-                reply = await asyncio.wait_for(
+                letta_reply = await asyncio.wait_for(
                     asyncio.to_thread(
-                        ask_letta,
+                        ask_letta_with_diagnostics,
                         self.letta_client,
                         self.letta_agent_id,
                         message,
@@ -170,6 +199,8 @@ class HannarioClient(discord.Client):
                 logging.exception("Failed to get Letta reply")
                 reply = LETTA_ERROR_REPLY
             else:
+                reply = letta_reply.text
+                log_letta_tool_events(message.id, letta_reply.tool_events)
                 logging.info(
                     "Received Letta reply for Discord message %s (%d chars)",
                     message.id,
