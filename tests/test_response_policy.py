@@ -159,6 +159,34 @@ class ResponsePolicyTest(unittest.TestCase):
         self.assertFalse(decision.should_respond)
         self.assertEqual(decision.trigger, "none")
 
+    def test_active_reply_skips_repeated_content(self) -> None:
+        now = datetime(2026, 5, 31, tzinfo=UTC)
+        bot_user = SimpleNamespace(id=1)
+        state_store = {
+            "123": ChannelConversationState(active_until=now + timedelta(seconds=60)),
+        }
+        config = ResponsePolicyConfig()
+
+        first = decide_response(
+            self.message("明日はラーメンを食べます"),
+            bot_user,
+            config,
+            state_store,
+            now=now,
+        )
+        second = decide_response(
+            self.message(" 明日はラーメンを食べます "),
+            bot_user,
+            config,
+            state_store,
+            now=now + timedelta(seconds=1),
+        )
+
+        self.assertTrue(first.should_respond)
+        self.assertEqual(first.trigger, "active")
+        self.assertFalse(second.should_respond)
+        self.assertEqual(second.trigger, "active_repeated_content")
+
     def test_silence_phrase_updates_state_and_blocks_response(self) -> None:
         now = datetime(2026, 5, 31, tzinfo=UTC)
         bot_user = SimpleNamespace(id=1)
@@ -386,7 +414,7 @@ class ResponsePolicyTest(unittest.TestCase):
         config = ResponsePolicyConfig(
             random_reply_enabled=True,
             random_reply_rate=1.0,
-            random_reply_repeated_content_limit=2,
+            non_explicit_reply_repeated_content_limit=2,
         )
 
         first = decide_response(
@@ -440,7 +468,7 @@ class ResponsePolicyTest(unittest.TestCase):
                 "DISCORD_RANDOM_REPLY_RATE": "0.25",
                 "DISCORD_RANDOM_REPLY_COOLDOWN_SECONDS": "900",
                 "DISCORD_RANDOM_REPLY_MIN_CHARS": "8",
-                "DISCORD_RANDOM_REPLY_REPEATED_CONTENT_LIMIT": "2",
+                "DISCORD_NON_EXPLICIT_REPLY_REPEATED_CONTENT_LIMIT": "2",
             },
         ):
             config = load_response_policy_config_from_env()
@@ -457,7 +485,17 @@ class ResponsePolicyTest(unittest.TestCase):
         self.assertEqual(config.random_reply_rate, 0.25)
         self.assertEqual(config.random_reply_cooldown_seconds, 900)
         self.assertEqual(config.random_reply_min_chars, 8)
-        self.assertEqual(config.random_reply_repeated_content_limit, 2)
+        self.assertEqual(config.non_explicit_reply_repeated_content_limit, 2)
+
+    def test_load_response_policy_config_reads_old_repeated_content_env(self) -> None:
+        with patch.dict(
+            os.environ,
+            {"DISCORD_RANDOM_REPLY_REPEATED_CONTENT_LIMIT": "2"},
+            clear=True,
+        ):
+            config = load_response_policy_config_from_env()
+
+        self.assertEqual(config.non_explicit_reply_repeated_content_limit, 2)
 
 
 if __name__ == "__main__":

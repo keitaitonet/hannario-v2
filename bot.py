@@ -273,9 +273,14 @@ class HannarioClient(discord.Client):
             await asyncio.to_thread(log_observed_message, message, self.user)
             if is_ping_command(message):
                 await message.channel.send("pong")
-            if decision.trigger == "silenced":
+            if decision.trigger in {
+                "silenced",
+                "active_repeated_content",
+                "random_repeated_content",
+            }:
                 logging.info(
-                    "Skipping response trigger=silenced from %s (%s) in #%s (%s)",
+                    "Skipping response trigger=%s from %s (%s) in #%s (%s)",
+                    decision.trigger,
                     message.author.display_name,
                     message.author.id,
                     getattr(message.channel, "name", "direct-message"),
