@@ -129,7 +129,7 @@ class ConversationLogTest(unittest.TestCase):
 
     def test_mention_log_record_can_record_response_trigger(self) -> None:
         bot_user = SimpleNamespace(id=999)
-        current_message = fake_message("ハンナどう思う？", message_id=103)
+        current_message = fake_message("はんなりどう思う？", message_id=103)
 
         record = mention_log_record(
             current_message,

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any
 
 
-DEFAULT_WAKE_WORDS = ("はんなり男", "ハンナ")
+DEFAULT_WAKE_WORDS = ("はんなり男", "はんなり")
 TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
 
 

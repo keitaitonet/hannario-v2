@@ -19,18 +19,18 @@ class ResponsePolicyTest(unittest.TestCase):
         self.assertEqual(parse_wake_words(None), DEFAULT_WAKE_WORDS)
 
     def test_parse_wake_words_splits_comma_separated_values(self) -> None:
-        self.assertEqual(parse_wake_words("はんなり男, ハンナ,, bot"), ("はんなり男", "ハンナ", "bot"))
+        self.assertEqual(parse_wake_words("はんなり男, はんなり,, bot"), ("はんなり男", "はんなり", "bot"))
 
     def test_contains_wake_word(self) -> None:
-        self.assertTrue(contains_wake_word("今日はハンナに聞きたい", ("ハンナ",)))
-        self.assertFalse(contains_wake_word("普通の会話", ("ハンナ",)))
+        self.assertTrue(contains_wake_word("今日ははんなりに聞きたい", ("はんなり",)))
+        self.assertFalse(contains_wake_word("普通の会話", ("はんなり",)))
 
     def test_decide_response_prefers_mention(self) -> None:
         bot_user = SimpleNamespace(id=1)
         message = SimpleNamespace(
             mentions=[bot_user],
             reference=SimpleNamespace(resolved=SimpleNamespace(author=bot_user)),
-            content="ハンナ",
+            content="はんなり",
         )
 
         decision = decide_response(message, bot_user, ResponsePolicyConfig())
@@ -87,7 +87,7 @@ class ResponsePolicyTest(unittest.TestCase):
 
     def test_wake_word_trigger_can_be_disabled(self) -> None:
         bot_user = SimpleNamespace(id=1)
-        message = SimpleNamespace(mentions=[], reference=None, content="ハンナ")
+        message = SimpleNamespace(mentions=[], reference=None, content="はんなり")
 
         decision = decide_response(
             message,
@@ -109,14 +109,14 @@ class ResponsePolicyTest(unittest.TestCase):
         with patch.dict(
             os.environ,
             {
-                "DISCORD_WAKE_WORDS": "はんなり男,ハンナ",
+                "DISCORD_WAKE_WORDS": "はんなり男,はんなり",
                 "DISCORD_REPLY_TRIGGER_ENABLED": "0",
                 "DISCORD_WAKE_WORD_TRIGGER_ENABLED": "1",
             },
         ):
             config = load_response_policy_config_from_env()
 
-        self.assertEqual(config.wake_words, ("はんなり男", "ハンナ"))
+        self.assertEqual(config.wake_words, ("はんなり男", "はんなり"))
         self.assertFalse(config.reply_trigger_enabled)
         self.assertTrue(config.wake_word_trigger_enabled)
 
