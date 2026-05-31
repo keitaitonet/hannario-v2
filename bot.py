@@ -25,6 +25,19 @@ def is_mentioned(message: discord.Message, bot_user: discord.ClientUser) -> bool
     return bot_user in message.mentions
 
 
+def clean_message_content(message: discord.Message, bot_user: discord.ClientUser) -> str:
+    content = message.content
+    mention_patterns = (
+        f"<@{bot_user.id}>",
+        f"<@!{bot_user.id}>",
+    )
+
+    for pattern in mention_patterns:
+        content = content.replace(pattern, "")
+
+    return " ".join(content.split())
+
+
 def read_text(value: Any) -> str | None:
     if isinstance(value, str):
         return value
@@ -72,23 +85,35 @@ def extract_assistant_text(response: Any) -> str | None:
     return None
 
 
-def format_discord_message(message: discord.Message) -> str:
+def format_discord_message(
+    message: discord.Message,
+    bot_user: discord.ClientUser,
+) -> str:
     channel_name = getattr(message.channel, "name", "direct-message")
+    guild_name = message.guild.name if message.guild else "direct-message"
+    clean_content = clean_message_content(message, bot_user)
+
     return (
         "Discord message\n"
-        f"author: {message.author.display_name}\n"
-        f"channel: {channel_name}\n"
-        f"content: {message.content}"
+        f"guild: {guild_name} ({message.guild.id if message.guild else 'dm'})\n"
+        f"channel: {channel_name} ({message.channel.id})\n"
+        f"author: {message.author.display_name} ({message.author.id})\n"
+        f"content: {clean_content or message.content}"
     )
 
 
-def ask_letta(client: Letta, agent_id: str, message: discord.Message) -> str:
+def ask_letta(
+    client: Letta,
+    agent_id: str,
+    message: discord.Message,
+    bot_user: discord.ClientUser,
+) -> str:
     response = client.agents.messages.create(
         agent_id=agent_id,
         messages=[
             MessageCreate(
                 role="user",
-                content=[TextContent(text=format_discord_message(message))],
+                content=[TextContent(text=format_discord_message(message, bot_user))],
             )
         ],
     )
@@ -126,7 +151,17 @@ class HannarioClient(discord.Client):
         if not is_mentioned(message, self.user):
             return
 
+        channel_name = getattr(message.channel, "name", "direct-message")
+        logging.info(
+            "Received mention from %s (%s) in #%s (%s)",
+            message.author.display_name,
+            message.author.id,
+            channel_name,
+            message.channel.id,
+        )
+
         if self.letta_agent_id is None:
+            logging.warning("Cannot reply because LETTA_AGENT_ID is not set")
             await message.reply("LETTA_AGENT_ID がまだ設定されていません。", mention_author=False)
             return
 
@@ -138,12 +173,19 @@ class HannarioClient(discord.Client):
                         self.letta_client,
                         self.letta_agent_id,
                         message,
+                        self.user,
                     ),
                     timeout=45,
                 )
             except Exception:
                 logging.exception("Failed to get Letta reply")
                 reply = LETTA_ERROR_REPLY
+            else:
+                logging.info(
+                    "Received Letta reply for Discord message %s (%d chars)",
+                    message.id,
+                    len(reply),
+                )
 
         await message.reply(reply, mention_author=False)
 
