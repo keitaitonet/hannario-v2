@@ -93,6 +93,12 @@ To diff two memory snapshots:
 uv run python scripts/diff_agent_memory.py memory_snapshots/before.json memory_snapshots/after.json
 ```
 
+To diff the latest two snapshots:
+
+```sh
+uv run python scripts/diff_latest_memory_snapshots.py
+```
+
 To manually replace one memory block:
 
 ```sh
