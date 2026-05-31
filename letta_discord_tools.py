@@ -256,7 +256,7 @@ def create_discord_schedule(channel_id: str, due_at: str, message: str, timezone
         A short confirmation including the created task id and stored UTC due_at.
     """
     import sqlite3
-    from datetime import UTC, datetime
+    from datetime import UTC, datetime, timedelta
     from pathlib import Path
     from zoneinfo import ZoneInfo
 
@@ -278,6 +278,12 @@ def create_discord_schedule(channel_id: str, due_at: str, message: str, timezone
 
     due_at_utc = parsed_due_at.astimezone(UTC).isoformat()
     created_at = datetime.now(UTC).isoformat()
+    if parsed_due_at.astimezone(UTC) <= datetime.now(UTC) + timedelta(seconds=5):
+        return (
+            "Failed to create schedule: due_at is in the past or too close to now. "
+            "Use the current Asia/Tokyo date/time for relative requests and ask the user "
+            "to confirm if the intended time is unclear."
+        )
 
     path = Path(DB_PATH)
     path.parent.mkdir(parents=True, exist_ok=True)

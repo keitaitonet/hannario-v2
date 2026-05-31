@@ -1,7 +1,8 @@
 import tempfile
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from letta_discord_tools import LETTA_DISCORD_TOOL_SPECS
 from schedule_db import create_scheduled_task, list_scheduled_tasks
@@ -136,15 +137,32 @@ class LettaDiscordToolsTest(unittest.TestCase):
                 if spec.name == "create_discord_schedule"
             )
             function = load_function(spec.source_code, spec.name, Path(temp_dir), db_path)
+            due_at = datetime.now(ZoneInfo("Asia/Tokyo")) + timedelta(days=1)
 
-            result = function("123", "2026-06-01T21:00:00", "21時です")
+            result = function("123", due_at.replace(microsecond=0).isoformat(), "21時です")
             tasks = list_scheduled_tasks(db_path=db_path)
 
             self.assertIn("Created scheduled Discord task #1", result)
             self.assertEqual(len(tasks), 1)
             self.assertEqual(tasks[0].channel_id, "123")
             self.assertEqual(tasks[0].message, "21時です")
-            self.assertEqual(tasks[0].due_at, "2026-06-01T12:00:00+00:00")
+
+    def test_create_discord_schedule_rejects_past_due_at(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            db_path = Path(temp_dir) / "local.sqlite3"
+            spec = next(
+                spec
+                for spec in LETTA_DISCORD_TOOL_SPECS
+                if spec.name == "create_discord_schedule"
+            )
+            function = load_function(spec.source_code, spec.name, Path(temp_dir), db_path)
+            past_due_at = datetime.now(ZoneInfo("Asia/Tokyo")) - timedelta(minutes=10)
+
+            result = function("123", past_due_at.isoformat(), "過去です")
+            tasks = list_scheduled_tasks(db_path=db_path)
+
+            self.assertIn("Failed to create schedule: due_at is in the past", result)
+            self.assertEqual(tasks, [])
 
     def test_cancel_discord_schedule_source(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

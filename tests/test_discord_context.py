@@ -78,6 +78,7 @@ class DiscordContextTest(unittest.TestCase):
         self.assertIn("utc: 2026-05-31T00:00:00+00:00", text)
         self.assertIn("local: 2026-05-31T09:00:00+09:00", text)
         self.assertIn("local_timezone: Asia/Tokyo", text)
+        self.assertIn("use the local Asia/Tokyo date and time", text)
 
 
 if __name__ == "__main__":

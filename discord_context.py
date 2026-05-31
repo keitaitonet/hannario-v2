@@ -36,6 +36,7 @@ def current_time_context(now: datetime | None = None) -> str:
             f"utc: {utc_now.isoformat()}",
             f"local: {local_now.isoformat()}",
             "local_timezone: Asia/Tokyo",
+            "date_resolution_note: For Japanese relative schedule requests, use the local Asia/Tokyo date and time, not the UTC date.",
         ]
     )
 
