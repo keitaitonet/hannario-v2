@@ -65,11 +65,35 @@ def validate_playbook_append(proposal: str) -> str:
     return normalized
 
 
+def non_id_playbook_lines(current_value: str) -> list[str]:
+    return [
+        line
+        for line in current_value.splitlines()
+        if line.strip() and not PLAYBOOK_LINE_PATTERN.match(line.strip())
+    ]
+
+
+def validate_current_playbook(current_value: str, proposal: str) -> None:
+    non_id_lines = non_id_playbook_lines(current_value)
+    if non_id_lines:
+        preview = "\n".join(f"- {line}" for line in non_id_lines[:5])
+        raise ValueError(
+            "Current playbook contains non-ID lines. Clean these before appending:\n"
+            f"{preview}"
+        )
+
+    existing_lines = {line.strip() for line in current_value.splitlines() if line.strip()}
+    if proposal in existing_lines:
+        raise ValueError("Proposal already exists in the current playbook.")
+
+
 def apply_playbook_append(
     current_value: str,
     proposal: str,
 ) -> str:
-    return append_preview(current_value, validate_playbook_append(proposal))
+    normalized = validate_playbook_append(proposal)
+    validate_current_playbook(current_value, normalized)
+    return append_preview(current_value, normalized)
 
 
 def confirm_apply(proposal: str) -> None:
