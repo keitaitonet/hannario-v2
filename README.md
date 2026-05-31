@@ -15,6 +15,42 @@ Edit `.env` and set `DISCORD_TOKEN`.
 
 In the Discord Developer Portal, enable the bot's **Message Content Intent**.
 
+## Letta server
+
+Run Letta locally with Docker. The Letta server owns the OpenAI API key; the
+Discord bot does not use it directly yet.
+
+```sh
+cp .env.letta.example .env.letta
+```
+
+Edit `.env.letta` and set `OPENAI_API_KEY`.
+
+Then start Letta:
+
+```sh
+docker run \
+  --env-file .env.letta \
+  -v ~/.letta/.persist/pgdata:/var/lib/postgresql/data \
+  -p 8283:8283 \
+  letta/letta:latest
+```
+
+The default local Letta URL is `http://localhost:8283`.
+
+## Letta smoke test
+
+With the Letta server running:
+
+```sh
+uv run python scripts/smoke_letta.py
+```
+
+The smoke test creates a new throwaway agent and sends one message using:
+
+- `openai/gpt-4o-mini`
+- `openai/text-embedding-3-small`
+
 ## Run
 
 ```sh
