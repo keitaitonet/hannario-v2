@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import random
 from typing import Any
 
 import discord
@@ -158,7 +159,13 @@ async def decide_response_for_message(
     config: ResponsePolicyConfig,
     conversation_states: ConversationStateStore,
 ) -> ResponseDecision:
-    decision = decide_response(message, bot_user, config, conversation_states)
+    decision = decide_response(
+        message,
+        bot_user,
+        config,
+        conversation_states,
+        random_value=random.random(),
+    )
     if decision.should_respond or not config.reply_trigger_enabled:
         return decision
 

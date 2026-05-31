@@ -11,10 +11,12 @@ from response_policy import (
     contains_wake_word,
     decide_response,
     is_active,
+    is_random_on_cooldown,
     is_silenced,
     is_resolved_reply_to_bot,
     load_response_policy_config_from_env,
     mark_channel_active,
+    mark_random_cooldown,
     parse_wake_words,
     silence_channel,
 )
@@ -247,6 +249,119 @@ class ResponsePolicyTest(unittest.TestCase):
         self.assertIsNone(state.active_until)
         self.assertTrue(is_silenced(state, now + timedelta(seconds=30)))
 
+    def test_random_reply_can_trigger_and_sets_cooldown(self) -> None:
+        now = datetime(2026, 5, 31, tzinfo=UTC)
+        bot_user = SimpleNamespace(id=1)
+        state_store: dict[str, ChannelConversationState] = {}
+
+        decision = decide_response(
+            self.message("今日はカレーを食べました"),
+            bot_user,
+            ResponsePolicyConfig(
+                random_reply_enabled=True,
+                random_reply_rate=0.5,
+                random_reply_cooldown_seconds=60,
+            ),
+            state_store,
+            now=now,
+            random_value=0.25,
+        )
+
+        self.assertTrue(decision.should_respond)
+        self.assertEqual(decision.trigger, "random")
+        self.assertTrue(is_random_on_cooldown(state_store["123"], now + timedelta(seconds=30)))
+
+    def test_random_reply_does_not_trigger_above_rate(self) -> None:
+        now = datetime(2026, 5, 31, tzinfo=UTC)
+        bot_user = SimpleNamespace(id=1)
+
+        decision = decide_response(
+            self.message("今日はカレーを食べました"),
+            bot_user,
+            ResponsePolicyConfig(random_reply_enabled=True, random_reply_rate=0.5),
+            {},
+            now=now,
+            random_value=0.75,
+        )
+
+        self.assertFalse(decision.should_respond)
+        self.assertEqual(decision.trigger, "none")
+
+    def test_random_reply_respects_cooldown(self) -> None:
+        now = datetime(2026, 5, 31, tzinfo=UTC)
+        bot_user = SimpleNamespace(id=1)
+        state_store = {
+            "123": ChannelConversationState(
+                random_cooldown_until=now + timedelta(seconds=60),
+            ),
+        }
+
+        decision = decide_response(
+            self.message("今日はカレーを食べました"),
+            bot_user,
+            ResponsePolicyConfig(random_reply_enabled=True, random_reply_rate=1.0),
+            state_store,
+            now=now,
+            random_value=0.0,
+        )
+
+        self.assertFalse(decision.should_respond)
+        self.assertEqual(decision.trigger, "none")
+
+    def test_random_reply_respects_silence(self) -> None:
+        now = datetime(2026, 5, 31, tzinfo=UTC)
+        bot_user = SimpleNamespace(id=1)
+        state_store = {
+            "123": ChannelConversationState(silenced_until=now + timedelta(seconds=60)),
+        }
+
+        decision = decide_response(
+            self.message("今日はカレーを食べました"),
+            bot_user,
+            ResponsePolicyConfig(random_reply_enabled=True, random_reply_rate=1.0),
+            state_store,
+            now=now,
+            random_value=0.0,
+        )
+
+        self.assertFalse(decision.should_respond)
+        self.assertEqual(decision.trigger, "silenced")
+
+    def test_random_reply_skips_short_and_command_content(self) -> None:
+        now = datetime(2026, 5, 31, tzinfo=UTC)
+        bot_user = SimpleNamespace(id=1)
+        config = ResponsePolicyConfig(
+            random_reply_enabled=True,
+            random_reply_rate=1.0,
+            random_reply_min_chars=6,
+        )
+
+        for content in ("短い", "!ping"):
+            with self.subTest(content=content):
+                decision = decide_response(
+                    self.message(content),
+                    bot_user,
+                    config,
+                    {},
+                    now=now,
+                    random_value=0.0,
+                )
+                self.assertFalse(decision.should_respond)
+
+    def test_mark_random_cooldown(self) -> None:
+        now = datetime(2026, 5, 31, tzinfo=UTC)
+        state_store: dict[str, ChannelConversationState] = {}
+
+        state = mark_random_cooldown(
+            state_store,
+            "123",
+            ResponsePolicyConfig(random_reply_cooldown_seconds=60),
+            now=now,
+        )
+
+        self.assertTrue(is_random_on_cooldown(state, now + timedelta(seconds=30)))
+        self.assertFalse(is_random_on_cooldown(state, now + timedelta(seconds=61)))
+
     def test_load_response_policy_config_from_env(self) -> None:
         with patch.dict(
             os.environ,
@@ -257,8 +372,12 @@ class ResponsePolicyTest(unittest.TestCase):
                 "DISCORD_WAKE_WORD_TRIGGER_ENABLED": "1",
                 "DISCORD_ACTIVE_REPLY_ENABLED": "1",
                 "DISCORD_SILENCE_ENABLED": "1",
+                "DISCORD_RANDOM_REPLY_ENABLED": "1",
                 "DISCORD_ACTIVE_REPLY_WINDOW_SECONDS": "120",
                 "DISCORD_SILENCE_SECONDS": "600",
+                "DISCORD_RANDOM_REPLY_RATE": "0.25",
+                "DISCORD_RANDOM_REPLY_COOLDOWN_SECONDS": "900",
+                "DISCORD_RANDOM_REPLY_MIN_CHARS": "8",
             },
         ):
             config = load_response_policy_config_from_env()
@@ -269,8 +388,12 @@ class ResponsePolicyTest(unittest.TestCase):
         self.assertTrue(config.wake_word_trigger_enabled)
         self.assertTrue(config.active_reply_enabled)
         self.assertTrue(config.silence_enabled)
+        self.assertTrue(config.random_reply_enabled)
         self.assertEqual(config.active_reply_window_seconds, 120)
         self.assertEqual(config.silence_seconds, 600)
+        self.assertEqual(config.random_reply_rate, 0.25)
+        self.assertEqual(config.random_reply_cooldown_seconds, 900)
+        self.assertEqual(config.random_reply_min_chars, 8)
 
 
 if __name__ == "__main__":

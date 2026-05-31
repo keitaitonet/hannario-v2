@@ -8,6 +8,9 @@ DEFAULT_WAKE_WORDS = ("はんなり男", "はんなり")
 DEFAULT_SILENCE_PHRASES = ("黙って", "消えて", "静かにして", "もういい", "呼んでない")
 DEFAULT_ACTIVE_REPLY_WINDOW_SECONDS = 300
 DEFAULT_SILENCE_SECONDS = 1800
+DEFAULT_RANDOM_REPLY_RATE = 0.1
+DEFAULT_RANDOM_REPLY_COOLDOWN_SECONDS = 900
+DEFAULT_RANDOM_REPLY_MIN_CHARS = 6
 TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
 
 
@@ -19,8 +22,12 @@ class ResponsePolicyConfig:
     wake_word_trigger_enabled: bool = True
     active_reply_enabled: bool = True
     silence_enabled: bool = True
+    random_reply_enabled: bool = False
     active_reply_window_seconds: int = DEFAULT_ACTIVE_REPLY_WINDOW_SECONDS
     silence_seconds: int = DEFAULT_SILENCE_SECONDS
+    random_reply_rate: float = DEFAULT_RANDOM_REPLY_RATE
+    random_reply_cooldown_seconds: int = DEFAULT_RANDOM_REPLY_COOLDOWN_SECONDS
+    random_reply_min_chars: int = DEFAULT_RANDOM_REPLY_MIN_CHARS
 
 
 @dataclass(frozen=True)
@@ -33,6 +40,7 @@ class ResponseDecision:
 class ChannelConversationState:
     active_until: datetime | None = None
     silenced_until: datetime | None = None
+    random_cooldown_until: datetime | None = None
 
 
 ConversationStateStore = dict[str, ChannelConversationState]
@@ -60,6 +68,19 @@ def parse_positive_int_env(name: str, default: int) -> int:
     return value
 
 
+def parse_probability_env(name: str, default: float) -> float:
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+
+    try:
+        value = float(raw_value)
+    except ValueError:
+        return default
+
+    return max(0.0, min(value, 1.0))
+
+
 def parse_wake_words(value: str | None) -> tuple[str, ...]:
     if value is None:
         return DEFAULT_WAKE_WORDS
@@ -80,11 +101,24 @@ def load_response_policy_config_from_env() -> ResponsePolicyConfig:
         wake_word_trigger_enabled=parse_bool_env("DISCORD_WAKE_WORD_TRIGGER_ENABLED", True),
         active_reply_enabled=parse_bool_env("DISCORD_ACTIVE_REPLY_ENABLED", True),
         silence_enabled=parse_bool_env("DISCORD_SILENCE_ENABLED", True),
+        random_reply_enabled=parse_bool_env("DISCORD_RANDOM_REPLY_ENABLED", False),
         active_reply_window_seconds=parse_positive_int_env(
             "DISCORD_ACTIVE_REPLY_WINDOW_SECONDS",
             DEFAULT_ACTIVE_REPLY_WINDOW_SECONDS,
         ),
         silence_seconds=parse_positive_int_env("DISCORD_SILENCE_SECONDS", DEFAULT_SILENCE_SECONDS),
+        random_reply_rate=parse_probability_env(
+            "DISCORD_RANDOM_REPLY_RATE",
+            DEFAULT_RANDOM_REPLY_RATE,
+        ),
+        random_reply_cooldown_seconds=parse_positive_int_env(
+            "DISCORD_RANDOM_REPLY_COOLDOWN_SECONDS",
+            DEFAULT_RANDOM_REPLY_COOLDOWN_SECONDS,
+        ),
+        random_reply_min_chars=parse_positive_int_env(
+            "DISCORD_RANDOM_REPLY_MIN_CHARS",
+            DEFAULT_RANDOM_REPLY_MIN_CHARS,
+        ),
     )
 
 
@@ -146,6 +180,19 @@ def is_silenced(state: ChannelConversationState, now: datetime) -> bool:
     return state.silenced_until is not None and state.silenced_until > now
 
 
+def is_random_on_cooldown(state: ChannelConversationState, now: datetime) -> bool:
+    return state.random_cooldown_until is not None and state.random_cooldown_until > now
+
+
+def is_random_eligible_content(content: str, config: ResponsePolicyConfig) -> bool:
+    stripped = content.strip()
+    if len(stripped) < config.random_reply_min_chars:
+        return False
+    if stripped.startswith("!"):
+        return False
+    return True
+
+
 def silence_channel(
     state_store: ConversationStateStore,
     channel_id: str,
@@ -173,6 +220,21 @@ def mark_channel_active(
     return state
 
 
+def mark_random_cooldown(
+    state_store: ConversationStateStore,
+    channel_id: str,
+    config: ResponsePolicyConfig,
+    *,
+    now: datetime | None = None,
+) -> ChannelConversationState:
+    actual_now = now or current_time()
+    state = get_channel_state(state_store, channel_id)
+    state.random_cooldown_until = actual_now + timedelta(
+        seconds=config.random_reply_cooldown_seconds,
+    )
+    return state
+
+
 def decide_response(
     message: Any,
     bot_user: Any,
@@ -180,6 +242,7 @@ def decide_response(
     state_store: ConversationStateStore | None = None,
     *,
     now: datetime | None = None,
+    random_value: float | None = None,
 ) -> ResponseDecision:
     actual_now = now or current_time()
     content = getattr(message, "content", "")
@@ -215,5 +278,17 @@ def decide_response(
         and is_active(state, actual_now)
     ):
         return ResponseDecision(True, "active")
+
+    if (
+        config.random_reply_enabled
+        and state_store is not None
+        and state is not None
+        and not is_random_on_cooldown(state, actual_now)
+        and is_random_eligible_content(content, config)
+    ):
+        actual_random_value = 1.0 if random_value is None else random_value
+        if actual_random_value < config.random_reply_rate:
+            mark_random_cooldown(state_store, channel_id, config, now=actual_now)
+            return ResponseDecision(True, "random")
 
     return ResponseDecision(False)

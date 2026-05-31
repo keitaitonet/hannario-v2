@@ -107,8 +107,12 @@ DISCORD_REPLY_TRIGGER_ENABLED=1
 DISCORD_WAKE_WORD_TRIGGER_ENABLED=1
 DISCORD_ACTIVE_REPLY_ENABLED=1
 DISCORD_SILENCE_ENABLED=1
+DISCORD_RANDOM_REPLY_ENABLED=0
 DISCORD_ACTIVE_REPLY_WINDOW_SECONDS=300
 DISCORD_SILENCE_SECONDS=1800
+DISCORD_RANDOM_REPLY_RATE=0.1
+DISCORD_RANDOM_REPLY_COOLDOWN_SECONDS=900
+DISCORD_RANDOM_REPLY_MIN_CHARS=6
 DISCORD_AUTO_SUMMARY_ENABLED=0
 DISCORD_AUTO_SUMMARY_INTERVAL_SECONDS=600
 DISCORD_AUTO_SUMMARY_LIMIT=20
@@ -132,6 +136,10 @@ uv run python bot.py
 - If a message contains one of `DISCORD_SILENCE_PHRASES`, the bot stops replying
   to active follow-up messages in that channel for `DISCORD_SILENCE_SECONDS`.
   Explicit mentions, Discord replies to the bot, and wake words still work.
+- If `DISCORD_RANDOM_REPLY_ENABLED=1`, the bot can occasionally join ordinary
+  non-triggered conversations. Random participation uses
+  `DISCORD_RANDOM_REPLY_RATE`, ignores short messages and commands, and has a
+  per-channel cooldown.
 - On reply, the bot sends the cleaned Discord message context to Letta.
 - On reply, the bot also sends up to `DISCORD_CONTEXT_MESSAGE_LIMIT` recent
   messages from the same channel as context. Set it to `0` to disable this.
