@@ -113,6 +113,14 @@ To evaluate the rule-based curator stub against the example data:
 uv run python scripts/eval_curator_stub.py
 ```
 
+To evaluate the LLM curator against the example data:
+
+```sh
+uv run python scripts/eval_curator_llm.py
+```
+
+This uses the OpenAI API once per example and does not write memory.
+
 To test the LLM curator dry-run:
 
 ```sh

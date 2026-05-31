@@ -88,4 +88,7 @@ curator decision.
 and validates the result with the same Pydantic schema. It reads
 `OPENAI_API_KEY` from `.env.letta` and still does not write memory.
 
+`scripts/eval_curator_llm.py` currently evaluates expected actions only.
+Generated proposals still require human review before any memory update.
+
 See [curator_examples.md](curator_examples.md) for expected behavior examples.
