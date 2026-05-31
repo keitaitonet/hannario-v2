@@ -41,7 +41,7 @@ class DiscordContextTest(unittest.TestCase):
 
         text = format_discord_message(current_message, bot_user, recent_messages)
 
-        self.assertIn("recent_channel_context_oldest_first:", text)
+        self.assertIn("recent_same_channel_context_oldest_first:", text)
         self.assertIn("bob (222): さっきの話です", text)
         self.assertIn("はんなり男 (999): 了解です", text)
         self.assertIn("current_message:", text)

@@ -31,7 +31,7 @@ def format_discord_message(
     ]
 
     if recent_messages:
-        lines.append("recent_channel_context_oldest_first:")
+        lines.append("recent_same_channel_context_oldest_first:")
         for recent_message in recent_messages:
             recent_content = clean_message_content(recent_message, bot_user)
             if not recent_content:
