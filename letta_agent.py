@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
+import json
 from typing import Any
 
 import discord
@@ -28,6 +29,9 @@ class LettaToolEvent:
 class LettaReply:
     text: str
     tool_events: list[LettaToolEvent]
+
+
+PRIVATE_CONTROL_ACTIONS = {"none", "consider_reply"}
 
 
 def read_text(value: Any) -> str | None:
@@ -119,6 +123,27 @@ def extract_tool_events(response: Any) -> list[LettaToolEvent]:
     return events
 
 
+def looks_like_private_control_json(text: str) -> bool:
+    stripped = text.strip()
+    if not stripped.startswith("{"):
+        return False
+
+    try:
+        parsed = json.loads(stripped)
+    except json.JSONDecodeError:
+        return False
+
+    if not isinstance(parsed, dict):
+        return False
+
+    return (
+        parsed.get("action") in PRIVATE_CONTROL_ACTIONS
+        and "reason" in parsed
+        and "channel_id" in parsed
+        and "message" in parsed
+    )
+
+
 def ask_letta_with_diagnostics(
     client: Letta,
     agent_id: str,
@@ -150,6 +175,8 @@ def ask_letta_with_diagnostics(
     text = extract_assistant_text(response)
     if text is None:
         raise RuntimeError(f"Could not extract assistant text from {type(response)!r}")
+    if looks_like_private_control_json(text):
+        text = "ごめん、内部確認用の返答になってしまいました。もう一度そのまま頼んでください。"
 
     return LettaReply(text=text, tool_events=extract_tool_events(response))
 

@@ -41,6 +41,10 @@ class DiscordContextTest(unittest.TestCase):
 
         text = format_discord_message(current_message, bot_user, recent_messages)
 
+        self.assertIn("public_reply_instruction:", text)
+        self.assertIn("not a private heartbeat", text)
+        self.assertIn("Do not answer with heartbeat JSON", text)
+        self.assertIn("call that tool", text)
         self.assertIn("priority: Prefer current_message", text)
         self.assertIn("current_time:", text)
         self.assertIn("local_timezone: Asia/Tokyo", text)

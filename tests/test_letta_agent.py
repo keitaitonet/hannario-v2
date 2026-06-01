@@ -1,10 +1,19 @@
 import unittest
 from types import SimpleNamespace
 
-from letta_agent import extract_tool_events
+from letta_agent import extract_tool_events, looks_like_private_control_json
 
 
 class LettaAgentTest(unittest.TestCase):
+    def test_looks_like_private_control_json(self) -> None:
+        self.assertTrue(
+            looks_like_private_control_json(
+                '{"action":"none","reason":"なし","channel_id":null,"message":""}'
+            )
+        )
+        self.assertFalse(looks_like_private_control_json('{"ok": true}'))
+        self.assertFalse(looks_like_private_control_json("普通の返答"))
+
     def test_extract_tool_events(self) -> None:
         response = SimpleNamespace(
             messages=[
