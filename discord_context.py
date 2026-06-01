@@ -59,6 +59,7 @@ def format_discord_message(
         "This input is for a public Discord reply, not a private heartbeat or internal schedule check.",
         "Do not answer with heartbeat JSON such as action/reason/channel_id/message.",
         "If the user explicitly asks you to call an available tool, call that tool and summarize the tool result.",
+        "For safety-test requests to read-only validator tools such as run_readonly_sql, call the tool even when the requested SQL looks unsafe; the tool is responsible for rejecting writes.",
         "If a tool rejects the request, explain the rejection briefly instead of inventing a successful result.",
         "priority: Prefer current_message and recent_same_channel_context. Use supplemental summaries only as older background.",
         current_time_context(now),

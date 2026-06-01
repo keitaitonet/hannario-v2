@@ -45,6 +45,8 @@ class DiscordContextTest(unittest.TestCase):
         self.assertIn("not a private heartbeat", text)
         self.assertIn("Do not answer with heartbeat JSON", text)
         self.assertIn("call that tool", text)
+        self.assertIn("run_readonly_sql", text)
+        self.assertIn("tool is responsible for rejecting writes", text)
         self.assertIn("priority: Prefer current_message", text)
         self.assertIn("current_time:", text)
         self.assertIn("local_timezone: Asia/Tokyo", text)
