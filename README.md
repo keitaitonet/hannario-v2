@@ -2,6 +2,16 @@
 
 Small Discord companion bot for a single private server.
 
+## Docs
+
+- [Architecture](docs/architecture.md): heart/body split, current organs, and
+  safety boundaries.
+- [Operations](docs/operations.md): local setup, smoke tests, Discord E2E
+  checks, and deployment readiness notes.
+- [Roadmap](docs/roadmap.md): current progress against the original handoff.
+- [Curator design](docs/curator_design.md): optional memory write gate design.
+- [Curator examples](docs/curator_examples.md): expected curator behavior.
+
 ## Current Architecture
 
 ```text
@@ -307,12 +317,13 @@ uv run python scripts/show_recent_schedule_deliveries.py --limit 5
 ```
 
 Letta can also create, list, and cancel schedules through custom tools. After
-changing `letta_discord_tools.py` or `compose.yaml`, restart Letta and re-register
+changing `hannario/letta_discord_tools.py`, `hannario/letta_db_tools.py`,
+`hannario/letta_web_tools.py`, or `compose.yaml`, restart Letta and re-register
 the tools:
 
 ```sh
 docker compose up -d letta
-uv run python scripts/register_letta_discord_tools.py
+uv run python scripts/register_letta_tools.py
 ```
 
 For the first end-to-end test, use a clear ISO-like time in Discord, for example:
