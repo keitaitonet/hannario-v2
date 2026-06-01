@@ -70,10 +70,14 @@ Use the local operator report as the first pass over app logs:
 
 ```sh
 uv run python scripts/operator_report.py --since 24h --limit 12
+uv run python scripts/operator_quality_review.py --since 24h --limit 30
 ```
 
 This summarizes triggered replies, observed conversations, heartbeat decisions,
 scheduled task deliveries, memory write audits, and obvious warnings.
+The quality review extracts likely review items such as fallback replies, long
+replies, non-explicit participation, safety-sensitive prompts, heartbeat post
+gate passes, and memory writes.
 
 ## What To Watch
 

@@ -368,6 +368,7 @@ Useful commands:
 
 ```sh
 uv run python scripts/operator_report.py --since 24h --limit 12
+uv run python scripts/operator_quality_review.py --since 24h --limit 30
 uv run python scripts/show_recent_mentions.py
 uv run python scripts/show_recent_observations.py
 uv run python scripts/show_recent_heartbeats.py
