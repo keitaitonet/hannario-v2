@@ -80,6 +80,9 @@ When the bot is running, a routine operation pass should inspect:
 6. app logs: recent mentions, observations, heartbeats, scheduled deliveries
 7. memory drift: latest memory write audit and snapshot diff
 
+The readiness command is allowed to check whether secrets are set, but it must
+not print secret values. Treat placeholder env values as a deployment blocker.
+
 Use the local operator report as the first pass over app logs:
 
 ```sh

@@ -195,6 +195,16 @@ checks, then start the bot. Never restore over a running bot process.
 
 ## Deployment Readiness
 
+Run:
+
+```sh
+uv run python scripts/check_deploy_readiness.py
+```
+
+It checks that required env vars are present and not placeholder values, without
+printing their secret values. It also checks local durable paths, SQLite access,
+and Letta HTTP reachability.
+
 Before running unattended, set conservative values:
 
 - `DISCORD_RANDOM_REPLY_ENABLED=0` or low `DISCORD_RANDOM_REPLY_RATE`

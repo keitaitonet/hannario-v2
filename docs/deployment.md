@@ -326,6 +326,10 @@ Run local readiness checks:
 uv run python scripts/check_deploy_readiness.py
 ```
 
+The readiness script checks commands, required env vars, placeholder values,
+local durable paths, SQLite schema access, and Letta HTTP health. It prints only
+whether secrets are set; it does not print secret values.
+
 Useful Discord E2E checks are listed in [operations.md](operations.md).
 
 ## Update Flow
