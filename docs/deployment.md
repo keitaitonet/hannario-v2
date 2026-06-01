@@ -56,6 +56,9 @@ Install or confirm:
 - user access to Docker, or an agreed service layout that starts Letta with
   system-level Docker
 
+Do not replace Ubuntu's system Python. Use `uv` to install and run the project
+Python version instead. The Ubuntu `git` package is sufficient for this project.
+
 Then clone or update the repository under:
 
 ```text
@@ -119,6 +122,12 @@ sudo loginctl enable-linger keitaito
 That is a privileged host operation and should be done intentionally.
 
 ## Operations
+
+For a read-only status sweep from the local development machine:
+
+```sh
+uv run python scripts/vm_readonly_status.py --host 172.17.2.4
+```
 
 Check service state:
 
@@ -209,3 +218,5 @@ ssh -o BatchMode=yes -o ConnectTimeout=5 172.17.2.4 '...read-only command...'
 
 Write operations on the VM and all `sudo` commands require explicit operator
 approval or should be given back as instructions.
+
+See [operator_runbook.md](operator_runbook.md) for the longer operating policy.

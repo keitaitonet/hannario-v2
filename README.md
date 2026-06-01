@@ -10,6 +10,8 @@ Small Discord companion bot for a single private server.
   checks, and deployment readiness notes.
 - [Deployment](docs/deployment.md): VM deployment, user systemd, update flow,
   and backup targets.
+- [Operator runbook](docs/operator_runbook.md): how an agent should inspect
+  and operate the VM safely.
 - [Roadmap](docs/roadmap.md): current progress against the original handoff.
 - [Curator design](docs/curator_design.md): optional memory write gate design.
 - [Curator examples](docs/curator_examples.md): expected curator behavior.
