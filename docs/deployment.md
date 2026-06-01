@@ -129,6 +129,14 @@ For a read-only status sweep from the local development machine:
 uv run python scripts/vm_readonly_status.py --host 172.17.2.4
 ```
 
+For read-only app-log reports after the repo exists on the VM:
+
+```sh
+uv run python scripts/vm_operator_report.py --host 172.17.2.4 --report summary --since 24h --limit 12
+uv run python scripts/vm_operator_report.py --host 172.17.2.4 --report quality --since 24h --limit 30
+uv run python scripts/vm_operator_report.py --host 172.17.2.4 --report recommendations --since 24h
+```
+
 Check service state:
 
 ```sh

@@ -397,6 +397,15 @@ uv run python scripts/preview_heartbeat_input.py
 uv run python scripts/smoke_heartbeat_post.py --channel-id 123 --message "heartbeat smoke test"
 ```
 
+Remote VM read-only operations:
+
+```sh
+uv run python scripts/vm_readonly_status.py --host 172.17.2.4
+uv run python scripts/vm_operator_report.py --host 172.17.2.4 --report summary --since 24h --limit 12
+uv run python scripts/vm_operator_report.py --host 172.17.2.4 --report quality --since 24h --limit 30
+uv run python scripts/vm_operator_report.py --host 172.17.2.4 --report recommendations --since 24h
+```
+
 `smoke_heartbeat_post.py` is dry-run by default. To actually post, set
 `DISCORD_HEARTBEAT_POST_ENABLED=1` and add `--send`.
 

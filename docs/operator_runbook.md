@@ -54,6 +54,20 @@ This script checks only read-only state:
 It is safe to run before the VM is fully prepared. Missing tools are reported as
 warnings rather than treated as fatal.
 
+## Remote Operator Reports
+
+After the repo and `uv` exist on the VM, run the app-log reports over SSH from
+the local development machine:
+
+```sh
+uv run python scripts/vm_operator_report.py --host 172.17.2.4 --report summary --since 24h --limit 12
+uv run python scripts/vm_operator_report.py --host 172.17.2.4 --report quality --since 24h --limit 30
+uv run python scripts/vm_operator_report.py --host 172.17.2.4 --report recommendations --since 24h
+```
+
+This wrapper is read-only. If the repo or `uv` is missing, it reports that and
+exits without trying to install anything.
+
 ## Routine Checks
 
 When the bot is running, a routine operation pass should inspect:
