@@ -90,6 +90,7 @@ Useful log inspection:
 uv run python scripts/operator_report.py --since 24h --limit 12
 uv run python scripts/operator_quality_review.py --since 24h --limit 30
 uv run python scripts/operator_recommendations.py --since 24h
+uv run python scripts/operator_backup_inventory.py
 uv run python scripts/show_recent_mentions.py
 uv run python scripts/show_recent_observations.py
 uv run python scripts/show_recent_heartbeats.py

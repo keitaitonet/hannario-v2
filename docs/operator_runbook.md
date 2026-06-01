@@ -86,6 +86,7 @@ Use the local operator report as the first pass over app logs:
 uv run python scripts/operator_report.py --since 24h --limit 12
 uv run python scripts/operator_quality_review.py --since 24h --limit 30
 uv run python scripts/operator_recommendations.py --since 24h
+uv run python scripts/operator_backup_inventory.py
 ```
 
 This summarizes triggered replies, observed conversations, heartbeat decisions,
@@ -95,6 +96,8 @@ replies, non-explicit participation, safety-sensitive prompts, heartbeat post
 gate passes, and memory writes.
 The recommendations command turns those review items into likely operational
 actions.
+The backup inventory command is read-only and reports which durable local
+targets exist before a backup run.
 
 ## What To Watch
 

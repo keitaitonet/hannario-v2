@@ -351,6 +351,12 @@ Before long unattended runs, back up:
 - `.env`
 - `.env.letta`
 
+Check local backup target presence first:
+
+```sh
+uv run python scripts/operator_backup_inventory.py
+```
+
 For the first deployment, a simple manual backup is acceptable. Automated
 rotation can come after the bot proves stable under supervised operation.
 
