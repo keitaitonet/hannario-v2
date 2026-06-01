@@ -8,11 +8,11 @@ from letta_client import Letta
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from schedule_db import SCHEDULE_KIND_POST, db_path_from_env, list_due_scheduled_tasks, mark_scheduled_task_done
+from hannario.schedule_db import SCHEDULE_KIND_POST, db_path_from_env, list_due_scheduled_tasks, mark_scheduled_task_done
 from curator_memory import require_agent_id
 from letta_settings import letta_base_url
-from internal_schedule import consult_letta_for_internal_task
-from schedule_runner import (
+from hannario.internal_schedule import consult_letta_for_internal_task
+from hannario.schedule_runner import (
     DEFAULT_SCHEDULE_DUE_LIMIT,
     DEFAULT_SCHEDULE_LOG_PATH,
     append_scheduled_task_delivery_log,

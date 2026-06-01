@@ -3,8 +3,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from letta_agent import LettaToolEvent
-from memory_audit import (
+from hannario.letta_agent import LettaToolEvent
+from hannario.memory_audit import (
     append_memory_write_audit,
     audit_record,
     has_memory_write_tool_call,

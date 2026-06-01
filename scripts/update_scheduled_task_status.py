@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from schedule_db import cancel_scheduled_task, db_path_from_env, mark_scheduled_task_done
+from hannario.schedule_db import cancel_scheduled_task, db_path_from_env, mark_scheduled_task_done
 
 
 def parse_args() -> argparse.Namespace:

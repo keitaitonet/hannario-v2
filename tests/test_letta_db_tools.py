@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from letta_db_tools import LETTA_DB_TOOL_SPECS
+from hannario.letta_db_tools import LETTA_DB_TOOL_SPECS
 
 
 def load_function(source_code: str, function_name: str, db_path: Path):

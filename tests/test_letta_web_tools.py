@@ -1,6 +1,6 @@
 import unittest
 
-from letta_web_tools import LETTA_WEB_TOOL_SPECS
+from hannario.letta_web_tools import LETTA_WEB_TOOL_SPECS
 
 
 def load_function(source_code: str, function_name: str):

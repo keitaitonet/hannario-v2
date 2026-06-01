@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 import discord
 
-from channel_summaries import format_channel_summary_for_prompt
+from hannario.channel_summaries import format_channel_summary_for_prompt
 
 
 LOCAL_TIME_ZONE = ZoneInfo("Asia/Tokyo")

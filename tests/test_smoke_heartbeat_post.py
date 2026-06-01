@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from smoke_heartbeat_post import build_manual_heartbeat_result, print_decision
 
-from heartbeat import HeartbeatPostDecision
+from hannario.heartbeat import HeartbeatPostDecision
 
 
 class SmokeHeartbeatPostTest(unittest.TestCase):

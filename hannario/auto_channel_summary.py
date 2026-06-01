@@ -9,8 +9,8 @@ from typing import Any, Callable
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from channel_summaries import DEFAULT_SUMMARY_LOG_PATH, read_latest_channel_summary
-from conversation_log import DEFAULT_OBSERVATION_LOG_PATH
+from hannario.channel_summaries import DEFAULT_SUMMARY_LOG_PATH, read_latest_channel_summary
+from hannario.conversation_log import DEFAULT_OBSERVATION_LOG_PATH
 
 
 DEFAULT_AUTO_SUMMARY_INTERVAL_SECONDS = 600

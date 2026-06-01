@@ -5,8 +5,8 @@ from typing import Any
 
 import discord
 
-from discord_context import clean_message_content
-from channel_summaries import compact_summary_record
+from hannario.discord_context import clean_message_content
+from hannario.channel_summaries import compact_summary_record
 
 
 DEFAULT_LOG_PATH = Path("logs/discord_mentions.jsonl")

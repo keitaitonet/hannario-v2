@@ -2,7 +2,7 @@ import unittest
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
-from discord_context import clean_message_content, current_time_context, format_discord_message
+from hannario.discord_context import clean_message_content, current_time_context, format_discord_message
 
 
 def fake_message(

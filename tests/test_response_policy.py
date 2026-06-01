@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from response_policy import (
+from hannario.response_policy import (
     ChannelConversationState,
     DEFAULT_WAKE_WORDS,
     ResponsePolicyConfig,

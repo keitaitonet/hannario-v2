@@ -5,9 +5,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from bot import maybe_handle_direct_schedule_request, run_due_scheduled_tasks_once, send_channel_message
-from schedule_db import SCHEDULE_KIND_THINK, create_scheduled_task, get_scheduled_task, list_scheduled_tasks
-from schedule_runner import ScheduleConfig
+from hannario.bot import maybe_handle_direct_schedule_request, run_due_scheduled_tasks_once, send_channel_message
+from hannario.schedule_db import SCHEDULE_KIND_THINK, create_scheduled_task, get_scheduled_task, list_scheduled_tasks
+from hannario.schedule_runner import ScheduleConfig
 
 
 class FakeChannel:
@@ -135,7 +135,7 @@ class ScheduleBotTest(unittest.IsolatedAsyncioTestCase):
                 log_path=log_path,
             )
 
-            with patch("bot.consult_letta_for_internal_task", return_value="考えた"):
+            with patch("hannario.bot.consult_letta_for_internal_task", return_value="考えた"):
                 await run_due_scheduled_tasks_once(config, client)  # type: ignore[arg-type]
 
             log_text = log_path.read_text(encoding="utf-8")

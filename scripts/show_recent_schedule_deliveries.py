@@ -7,7 +7,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from schedule_runner import DEFAULT_SCHEDULE_LOG_PATH
+from hannario.schedule_runner import DEFAULT_SCHEDULE_LOG_PATH
 
 
 def parse_args() -> argparse.Namespace:

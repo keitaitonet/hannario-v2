@@ -2,7 +2,7 @@ import unittest
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
-from conversation_log import mention_log_record, observation_log_record
+from hannario.conversation_log import mention_log_record, observation_log_record
 
 
 def fake_message(

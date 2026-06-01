@@ -4,8 +4,8 @@ from typing import Any
 
 from letta_client import Letta
 
-from letta_agent import LettaToolEvent
-from memory_snapshot import (
+from hannario.letta_agent import LettaToolEvent
+from hannario.memory_snapshot import (
     DEFAULT_SNAPSHOT_DIR,
     capture_snapshot,
     diff_snapshot_text,

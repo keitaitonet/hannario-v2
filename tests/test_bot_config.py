@@ -3,7 +3,7 @@ import unittest
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
-from bot import (
+from hannario.bot import (
     DEFAULT_CHANNEL_SUMMARY_MAX_AGE_SECONDS,
     DEFAULT_CONTEXT_MESSAGE_LIMIT,
     MAX_CONTEXT_MESSAGE_LIMIT,
@@ -30,7 +30,7 @@ class ContextMessageLimitTest(unittest.TestCase):
     def test_invalid_context_limit_uses_default(self) -> None:
         with (
             patch.dict(os.environ, {"DISCORD_CONTEXT_MESSAGE_LIMIT": "many"}),
-            patch("bot.logging.warning"),
+            patch("hannario.bot.logging.warning"),
         ):
             self.assertEqual(context_message_limit(), DEFAULT_CONTEXT_MESSAGE_LIMIT)
 
@@ -68,7 +68,7 @@ class ContextMessageLimitTest(unittest.TestCase):
     def test_invalid_channel_summary_max_age_uses_default(self) -> None:
         with (
             patch.dict(os.environ, {"DISCORD_CHANNEL_SUMMARY_MAX_AGE_SECONDS": "bad"}),
-            patch("bot.logging.warning"),
+            patch("hannario.bot.logging.warning"),
         ):
             self.assertEqual(
                 channel_summary_max_age_seconds(),

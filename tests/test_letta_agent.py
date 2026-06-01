@@ -1,7 +1,7 @@
 import unittest
 from types import SimpleNamespace
 
-from letta_agent import extract_tool_events, looks_like_private_control_json
+from hannario.letta_agent import extract_tool_events, looks_like_private_control_json
 
 
 class LettaAgentTest(unittest.TestCase):

@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from schedule_db import db_path_from_env, initialize_database
+from hannario.schedule_db import db_path_from_env, initialize_database
 
 
 def main() -> None:

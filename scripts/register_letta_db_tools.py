@@ -7,7 +7,7 @@ from letta_client import Letta
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from curator_memory import require_agent_id
-from letta_db_tools import LETTA_DB_TOOL_SPECS, LettaDbToolSpec
+from hannario.letta_db_tools import LETTA_DB_TOOL_SPECS, LettaDbToolSpec
 from letta_settings import letta_base_url
 
 

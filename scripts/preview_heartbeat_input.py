@@ -4,7 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from heartbeat import (
+from hannario.heartbeat import (
     DEFAULT_HEARTBEAT_INTERNAL_RESULT_LIMIT,
     DEFAULT_HEARTBEAT_INTERNAL_RESULT_MAX_AGE_SECONDS,
     DEFAULT_HEARTBEAT_OBSERVATION_LIMIT,

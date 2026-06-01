@@ -6,7 +6,7 @@ from typing import Any
 import discord
 from letta_client import Letta, MessageCreate, TextContent
 
-from discord_context import format_discord_message
+from hannario.discord_context import format_discord_message
 
 
 RETURN_MESSAGE_TYPES = [

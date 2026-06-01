@@ -4,8 +4,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from letta_discord_tools import LETTA_DISCORD_TOOL_SPECS
-from schedule_db import create_scheduled_task, list_scheduled_tasks
+from hannario.letta_discord_tools import LETTA_DISCORD_TOOL_SPECS
+from hannario.schedule_db import create_scheduled_task, list_scheduled_tasks
 
 
 def load_function(

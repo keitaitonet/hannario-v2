@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from bot import maybe_post_heartbeat_result
-from heartbeat import (
+from hannario.bot import maybe_post_heartbeat_result
+from hannario.heartbeat import (
     HeartbeatPostDecision,
     HeartbeatResult,
     append_heartbeat_log,

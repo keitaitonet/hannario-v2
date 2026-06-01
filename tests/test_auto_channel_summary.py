@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from auto_channel_summary import (
+from hannario.auto_channel_summary import (
     AutoSummaryConfig,
     find_summary_candidates,
     format_channel_context,

@@ -1,7 +1,7 @@
 from letta_client import Letta, MessageCreate, TextContent
 
-from letta_agent import RETURN_MESSAGE_TYPES, extract_assistant_text
-from schedule_db import ScheduledTask
+from hannario.letta_agent import RETURN_MESSAGE_TYPES, extract_assistant_text
+from hannario.schedule_db import ScheduledTask
 
 
 def build_internal_task_prompt(task: ScheduledTask) -> str:

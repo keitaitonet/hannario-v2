@@ -5,7 +5,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from memory_snapshot import block_value, diff_snapshot_text, load_snapshot
+from hannario.memory_snapshot import block_value, diff_snapshot_text, load_snapshot
 
 
 def parse_args() -> argparse.Namespace:

@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from curator_memory import require_agent_id
 from letta_settings import letta_base_url
-from letta_web_tools import LETTA_WEB_TOOL_SPECS, LettaWebToolSpec
+from hannario.letta_web_tools import LETTA_WEB_TOOL_SPECS, LettaWebToolSpec
 
 
 def upsert_tool(client: Letta, spec: LettaWebToolSpec):

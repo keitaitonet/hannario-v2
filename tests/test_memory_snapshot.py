@@ -3,7 +3,7 @@ import unittest
 from datetime import UTC, datetime
 from pathlib import Path
 
-from memory_snapshot import (
+from hannario.memory_snapshot import (
     block_value,
     diff_snapshot_text,
     latest_snapshot_paths,

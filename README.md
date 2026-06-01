@@ -7,15 +7,19 @@ Small Discord companion bot for a single private server.
 ```text
 Discord
   -> bot.py
-      -> Letta server (Docker Compose)
+      -> hannario/ package
+          -> Letta server (Docker Compose)
           -> OpenAI model + embedding
           -> Docker volume
           -> read-only /logs mount for custom tools
 ```
 
-- `bot.py` owns Discord I/O.
-- `discord_context.py` formats Discord messages for Letta.
-- `letta_agent.py` owns Letta message calls, replies, and tool diagnostics.
+- `bot.py` is a thin compatibility entrypoint for `uv run python bot.py`.
+- `hannario/bot.py` owns Discord I/O.
+- `hannario/discord_context.py` formats Discord messages for Letta.
+- `hannario/letta_agent.py` owns Letta message calls, replies, and tool diagnostics.
+- `hannario/` contains the bot's runtime modules; `scripts/` contains local
+  operations and smoke-test commands.
 - Letta owns agent state, message history, memory blocks, and custom tools.
 - OpenAI keys are used by the Letta server, the bot's optional auto-summary
   task, and local OpenAI helper scripts.

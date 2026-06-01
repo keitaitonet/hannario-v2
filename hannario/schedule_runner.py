@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from schedule_db import DEFAULT_DB_PATH, ScheduledTask, db_path_from_env
+from hannario.schedule_db import DEFAULT_DB_PATH, ScheduledTask, db_path_from_env
 
 
 DEFAULT_SCHEDULE_INTERVAL_SECONDS = 30

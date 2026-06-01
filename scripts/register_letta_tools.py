@@ -8,10 +8,10 @@ from letta_client import Letta
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from curator_memory import require_agent_id
-from letta_db_tools import LETTA_DB_TOOL_SPECS
-from letta_discord_tools import LETTA_DISCORD_TOOL_SPECS
+from hannario.letta_db_tools import LETTA_DB_TOOL_SPECS
+from hannario.letta_discord_tools import LETTA_DISCORD_TOOL_SPECS
 from letta_settings import letta_base_url
-from letta_web_tools import LETTA_WEB_TOOL_SPECS
+from hannario.letta_web_tools import LETTA_WEB_TOOL_SPECS
 
 
 class ToolSpec(Protocol):

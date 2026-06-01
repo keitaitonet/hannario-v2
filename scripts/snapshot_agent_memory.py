@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from curator_memory import require_agent_id
 from letta_settings import letta_base_url
-from memory_snapshot import build_snapshot, save_snapshot, snapshot_path
+from hannario.memory_snapshot import build_snapshot, save_snapshot, snapshot_path
 
 
 def build_agent_snapshot() -> dict:

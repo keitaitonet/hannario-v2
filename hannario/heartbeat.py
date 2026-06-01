@@ -8,8 +8,8 @@ from typing import Any
 
 from letta_client import Letta, MessageCreate, TextContent
 
-from discord_context import current_time_context
-from letta_agent import RETURN_MESSAGE_TYPES, extract_assistant_text
+from hannario.discord_context import current_time_context
+from hannario.letta_agent import RETURN_MESSAGE_TYPES, extract_assistant_text
 
 
 DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 900

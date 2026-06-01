@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from heartbeat import (
+from hannario.heartbeat import (
     DEFAULT_HEARTBEAT_INTERNAL_RESULT_MAX_AGE_SECONDS,
     DEFAULT_HEARTBEAT_INTERVAL_SECONDS,
     DEFAULT_HEARTBEAT_OBSERVATION_MAX_AGE_SECONDS,
@@ -81,14 +81,14 @@ class HeartbeatTest(unittest.TestCase):
     def test_parse_positive_int_env_uses_default_for_invalid_value(self) -> None:
         with (
             patch.dict(os.environ, {"TEST_INTERVAL": "bad"}),
-            patch("heartbeat.logging.warning"),
+            patch("hannario.heartbeat.logging.warning"),
         ):
             self.assertEqual(parse_positive_int_env("TEST_INTERVAL", 10), 10)
 
     def test_run_heartbeat_once_logs_current_time(self) -> None:
         now = datetime(2026, 5, 31, 0, 0, tzinfo=UTC)
 
-        with patch("heartbeat.logging.info") as log_info:
+        with patch("hannario.heartbeat.logging.info") as log_info:
             result = run_heartbeat_once(HeartbeatConfig(), now=now)
 
         self.assertEqual(result.checked_at, "2026-05-31T00:00:00+00:00")
@@ -317,7 +317,7 @@ class HeartbeatTest(unittest.TestCase):
             )
 
             with patch(
-                "heartbeat.consult_letta_for_heartbeat",
+                "hannario.heartbeat.consult_letta_for_heartbeat",
                 return_value='{"action":"none","reason":"特になし","channel_id":null,"message":""}',
             ) as consult:
                 result = run_heartbeat_once(

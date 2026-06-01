@@ -1,6 +1,6 @@
 import unittest
 
-from schedule_intent import (
+from hannario.schedule_intent import (
     AmbiguousScheduleIntent,
     RelativeScheduleIntent,
     normalize_digits,

@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from channel_summaries import (
+from hannario.channel_summaries import (
     compact_summary_record,
     format_channel_summary_for_prompt,
     read_latest_channel_summary,

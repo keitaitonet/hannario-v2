@@ -5,7 +5,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from discord_context import current_time_context
+from hannario.discord_context import current_time_context
 from show_channel_summaries import (
     DEFAULT_SUMMARY_LOG_PATH,
     read_recent_summary_records,

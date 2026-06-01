@@ -6,8 +6,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from schedule_db import create_scheduled_task
-from schedule_runner import (
+from hannario.schedule_db import create_scheduled_task
+from hannario.schedule_runner import (
     DEFAULT_SCHEDULE_DUE_LIMIT,
     DEFAULT_SCHEDULE_INTERVAL_SECONDS,
     DEFAULT_SCHEDULE_LOG_PATH,

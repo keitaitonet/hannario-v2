@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import patch
 
-from schedule_db import (
+from hannario.schedule_db import (
     DEFAULT_DB_PATH,
     SCHEDULE_KIND_POST,
     SCHEDULE_KIND_THINK,
